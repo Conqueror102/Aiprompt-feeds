@@ -3,16 +3,15 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function LoginPage() {
-  const router = useRouter()
+  const { login } = useAuth()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
@@ -30,38 +29,9 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
 
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        localStorage.setItem("token", data.token)
-        toast({
-          title: "Welcome back!",
-          description: "You have been signed in successfully",
-        })
-        router.push("/")
-      } else {
-        toast({
-          title: "Error",
-          description: data.message || "Failed to sign in",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign in",
-        variant: "destructive",
-      })
-    } finally {
+    const result = await login(formData.email, formData.password)
+    
+    if (!result.success) {
       setLoading(false)
     }
   }

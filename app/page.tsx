@@ -1,19 +1,23 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Menu } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import PromptCard from "@/components/PromptCard"
-import Navbar from "@/components/Navbar"
-import { AI_AGENTS, CATEGORIES } from "@/lib/constants"
-import Footer from "@/components/Footer"
 import PromptDetailModal from "@/components/PromptDetailModal"
-import AIAgentCollections from "@/components/AIAgentCollections"
 import PromptSidebar from "@/components/PromptSidebar"
+import AIAgentChat from "@/components/AIAgentChat"
 import DevModeToggle from "@/components/DevModeToggle"
 import DevModeInterface from "@/components/DevModeInterface"
-import AIAgentChat from "@/components/AIAgentChat"
+import AIAgentCollections from "@/components/AIAgentCollections"
+import Footer from "@/components/Footer"
+import Navbar from "@/components/Navbar"
+import { useAuth } from "@/hooks/use-auth"
+import { AI_AGENTS, CATEGORIES } from "@/lib/constants"
+import { Search } from "lucide-react"
 
 interface Prompt {
   _id: string
@@ -39,57 +43,30 @@ interface User {
 }
 
 export default function HomePage() {
+  const { user, loading: authLoading } = useAuth()
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [filteredPrompts, setFilteredPrompts] = useState<Prompt[]>([])
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<User | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<string>("all")
-  const [selectedAgent, setSelectedAgent] = useState<string>("all")
-
+  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [selectedAgent, setSelectedAgent] = useState("all")
+  const [selectedAgentForFilter, setSelectedAgentForFilter] = useState("")
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("")
   const [selectedPromptForModal, setSelectedPromptForModal] = useState<Prompt | null>(null)
-  const [isDevMode, setIsDevMode] = useState(false)
-  const [selectedAgentForFilter, setSelectedAgentForFilter] = useState<string>("")
-  const [selectedPromptId, setSelectedPromptId] = useState<string>("")
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>("")
-  const [showSidebar, setShowSidebar] = useState(false)
   const [chatAgent, setChatAgent] = useState<{ agent: string; prompt: string } | null>(null)
-  const [showAIAgentCollections, setShowAIAgentCollections] = useState(false)
+  const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
+  const [tempSelectedPromptId, setTempSelectedPromptId] = useState<string | null>(null)
+  const [isDevMode, setIsDevMode] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [tempSelectedPromptId, setTempSelectedPromptId] = useState<string | null>(null);
+  const [showAIAgentCollections, setShowAIAgentCollections] = useState(false)
 
   useEffect(() => {
-    fetchUser()
     fetchPrompts()
   }, [])
 
   useEffect(() => {
     filterPrompts()
   }, [prompts, searchTerm, selectedCategory, selectedAgent, selectedAgentForFilter, selectedCategoryFilter])
-
-  const fetchUser = async () => {
-    const token = localStorage.getItem("token")
-    if (!token) return
-
-    try {
-      const response = await fetch("/api/auth/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        const userData = await response.json()
-        setUser(userData)
-      } else {
-        // Token might be expired, remove it
-        localStorage.removeItem("token")
-      }
-    } catch (error) {
-      console.error("Failed to fetch user:", error)
-      localStorage.removeItem("token")
-    }
-  }
 
   const fetchPrompts = async () => {
     try {

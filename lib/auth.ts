@@ -12,7 +12,7 @@ export const comparePassword = async (password: string, hashedPassword: string):
 }
 
 export const generateToken = (userId: string): string => {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "7d" })
+  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "30d" })
 }
 
 export const verifyToken = (token: string): { userId: string } | null => {
@@ -20,5 +20,20 @@ export const verifyToken = (token: string): { userId: string } | null => {
     return jwt.verify(token, JWT_SECRET) as { userId: string }
   } catch {
     return null
+  }
+}
+
+export const isTokenExpiringSoon = (token: string): boolean => {
+  try {
+    const decoded = jwt.decode(token) as any
+    if (!decoded || !decoded.exp) return true
+    
+    const now = Math.floor(Date.now() / 1000)
+    const expiresIn = decoded.exp - now
+    
+    // Return true if token expires in less than 7 days
+    return expiresIn < (7 * 24 * 60 * 60)
+  } catch {
+    return true
   }
 }

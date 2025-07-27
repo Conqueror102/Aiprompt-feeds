@@ -20,7 +20,10 @@ import {
   Redo,
   Settings,
   Play,
-  X
+  X,
+  Strikethrough,
+  Type,
+  RotateCcw
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -87,6 +90,7 @@ export default function EditPromptPage() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [isOwner, setIsOwner] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [showPlaceholder, setShowPlaceholder] = useState(true)
   
   // Form data for owners
   const [formData, setFormData] = useState({
@@ -277,48 +281,90 @@ export default function EditPromptPage() {
   }
 
   const formatText = (command: string) => {
-    const textarea = document.getElementById("prompt-editor") as HTMLTextAreaElement
-    if (!textarea) return
+    const editor = document.getElementById("prompt-editor") as HTMLDivElement
+    if (!editor) return
 
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const selectedText = editedContent.substring(start, end)
-    let replacement = ""
-
+    // Focus the editor first
+    editor.focus()
+    
+    // Handle special cases
     switch (command) {
-      case "bold":
-        replacement = `**${selectedText}**`
-        break
-      case "italic":
-        replacement = `*${selectedText}*`
-        break
-      case "underline":
-        replacement = `__${selectedText}__`
-        break
-      case "code":
-        replacement = `\`${selectedText}\``
-        break
-      case "quote":
-        replacement = `> ${selectedText}`
-        break
       case "list":
-        replacement = `- ${selectedText}`
+        document.execCommand('insertUnorderedList', false, undefined as any)
         break
       case "ordered-list":
-        replacement = `1. ${selectedText}`
+        document.execCommand('insertOrderedList', false, undefined as any)
+        break
+      case "quote":
+        // Create a blockquote
+        const selection = window.getSelection()
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0)
+          const blockquote = document.createElement('blockquote')
+          blockquote.style.borderLeft = '4px solid #ccc'
+          blockquote.style.paddingLeft = '1rem'
+          blockquote.style.margin = '1rem 0'
+          range.surroundContents(blockquote)
+        }
+        break
+      case "code":
+        document.execCommand('formatBlock', false, 'pre')
         break
       default:
-        return
+        // Execute the command
+        document.execCommand(command, false, undefined as any)
     }
-
-    const newContent = editedContent.substring(0, start) + replacement + editedContent.substring(end)
-    setEditedContent(newContent)
     
-    // Set cursor position after the replacement
-    setTimeout(() => {
-      textarea.focus()
-      textarea.setSelectionRange(start + replacement.length, start + replacement.length)
-    }, 0)
+    // Update the state with the new content
+    setEditedContent(editor.innerHTML)
+  }
+
+  const handleUndo = () => {
+    const editor = document.getElementById("prompt-editor") as HTMLDivElement
+    if (!editor) return
+    
+    editor.focus()
+    document.execCommand('undo', false, undefined as any)
+    setEditedContent(editor.innerHTML)
+  }
+
+  const handleRedo = () => {
+    const editor = document.getElementById("prompt-editor") as HTMLDivElement
+    if (!editor) return
+    
+    editor.focus()
+    document.execCommand('redo', false, undefined as any)
+    setEditedContent(editor.innerHTML)
+  }
+
+  const handleAlignment = (align: string) => {
+    const editor = document.getElementById("prompt-editor") as HTMLDivElement
+    if (!editor) return
+    
+    editor.focus()
+    document.execCommand('justify' + align, false, undefined as any)
+    setEditedContent(editor.innerHTML)
+  }
+
+  const handleEditorChange = (e: React.FormEvent<HTMLDivElement>) => {
+    const content = e.currentTarget.innerHTML
+    setEditedContent(content)
+    setShowPlaceholder(content === '' || content === '<br>' || content === '<div><br></div>')
+  }
+
+  const handleEditorPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const text = e.clipboardData.getData('text/plain')
+    document.execCommand('insertText', false, text)
+  }
+
+  const handleEditorFocus = () => {
+    setShowPlaceholder(false)
+  }
+
+  const handleEditorBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    const content = e.currentTarget.innerHTML
+    setShowPlaceholder(content === '' || content === '<br>' || content === '<div><br></div>')
   }
 
   if (loading) {
@@ -352,9 +398,9 @@ export default function EditPromptPage() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <Button
-                variant="ghost"
+                variant="outline"
                 onClick={() => router.push("/")}
-                className="text-gray-600 hover:text-gray-900"
+                className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/20"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
@@ -363,7 +409,7 @@ export default function EditPromptPage() {
                 <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {isOwner ? "Edit Your Prompt" : "Edit Prompt"}: {prompt.title}
                 </h1>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {isOwner 
                     ? "Edit and save your prompt" 
                     : "Temporary editing environment - copy or start chat with your edited version"
@@ -375,7 +421,7 @@ export default function EditPromptPage() {
             <div className="flex items-center gap-3">
               {!isOwner && (
                 <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-48 border-green-200 dark:border-green-700">
                     <SelectValue placeholder="Select AI Agent" />
                   </SelectTrigger>
                   <SelectContent>
@@ -403,7 +449,7 @@ export default function EditPromptPage() {
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  variant="outline"
+                  className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {saving ? "Saving..." : "Save Changes"}
@@ -413,7 +459,7 @@ export default function EditPromptPage() {
               {!isOwner && (
                 <Button
                   onClick={handleCopy}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   <Send className="h-4 w-4 mr-2" />
                   Copy
@@ -433,7 +479,7 @@ export default function EditPromptPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => formatText("bold")}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
               >
                 <Bold className="h-4 w-4" />
               </Button>
@@ -441,7 +487,7 @@ export default function EditPromptPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => formatText("italic")}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
               >
                 <Italic className="h-4 w-4" />
               </Button>
@@ -449,20 +495,28 @@ export default function EditPromptPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => formatText("underline")}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
               >
                 <Underline className="h-4 w-4" />
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => formatText("strikethrough")}
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
+              >
+                <Strikethrough className="h-4 w-4" />
+              </Button>
             </div>
             
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-6 bg-green-200 dark:bg-green-700" />
             
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => formatText("list")}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
               >
                 <List className="h-4 w-4" />
               </Button>
@@ -470,7 +524,7 @@ export default function EditPromptPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => formatText("ordered-list")}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
               >
                 <ListOrdered className="h-4 w-4" />
               </Button>
@@ -478,7 +532,7 @@ export default function EditPromptPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => formatText("quote")}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
               >
                 <Quote className="h-4 w-4" />
               </Button>
@@ -486,54 +540,68 @@ export default function EditPromptPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => formatText("code")}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
               >
                 <Code className="h-4 w-4" />
               </Button>
             </div>
             
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-6 bg-green-200 dark:bg-green-700" />
             
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0"
+                onClick={() => handleAlignment("Left")}
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
               >
                 <AlignLeft className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0"
+                onClick={() => handleAlignment("Center")}
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
               >
                 <AlignCenter className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0"
+                onClick={() => handleAlignment("Right")}
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
               >
                 <AlignRight className="h-4 w-4" />
               </Button>
             </div>
             
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-6 bg-green-200 dark:bg-green-700" />
             
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0"
+                onClick={handleUndo}
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
               >
                 <Undo className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0"
+                onClick={handleRedo}
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
               >
                 <Redo className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => formatText("removeFormat")}
+                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
+                title="Clear formatting"
+              >
+                <RotateCcw className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -543,145 +611,172 @@ export default function EditPromptPage() {
       {/* Editor */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {isOwner ? (
-          // Owner editing - full form
-          <div className="space-y-6">
-            {/* Basic Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Basic Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Enter prompt title"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Enter prompt description"
-                    rows={3}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* AI Agents */}
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Agents</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {AI_AGENTS.map((agent) => (
-                    <Button
-                      key={agent}
-                      variant={formData.aiAgents.includes(agent) ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handleAgentToggle(agent)}
-                      className={formData.aiAgents.includes(agent) ? "bg-green-600 hover:bg-green-700" : ""}
-                    >
-                      {agent}
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Technologies (for Development category) */}
-            {formData.category === "Development" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Technologies</CardTitle>
+          // Owner editing - content first, then sidebar
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Main Content Editor - Takes 3/4 of space */}
+            <div className="lg:col-span-3">
+              <Card className="min-h-[80vh] border-green-200 dark:border-green-700">
+                <CardHeader className="bg-green-50 dark:bg-green-900/20">
+                  <CardTitle className="text-green-800 dark:text-green-200">Edit Prompt Content</CardTitle>
+                  <p className="text-sm text-green-600 dark:text-green-400">Focus on editing your prompt content here</p>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {TECHNOLOGIES.map((tech) => (
+                  <div className="prose prose-lg max-w-none relative">
+                    <div
+                      id="prompt-editor"
+                      contentEditable
+                      dangerouslySetInnerHTML={{ __html: editedContent }}
+                      onInput={handleEditorChange}
+                      onPaste={handleEditorPaste}
+                      onFocus={handleEditorFocus}
+                      onBlur={handleEditorBlur}
+                      className="w-full min-h-[70vh] p-6 text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono outline-none focus:ring-2 focus:ring-green-500/20"
+                      style={{
+                        fontSize: `${fontSize}px`,
+                        fontFamily: fontFamily,
+                      }}
+                    />
+                    {showPlaceholder && (
+                      <div className="absolute top-6 left-6 text-green-400 dark:text-green-500 pointer-events-none">
+                        <p>Start typing your prompt here...</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Sidebar with other fields - Takes 1/4 of space */}
+            <div className="lg:col-span-1 space-y-4">
+              {/* Basic Info */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Basic Info</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <Label htmlFor="title" className="text-sm">Title</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Enter title"
+                      className="text-sm"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="description" className="text-sm">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Brief description"
+                      rows={2}
+                      className="text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="category" className="text-sm">Category</Label>
+                    <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
+                      <SelectTrigger className="text-sm">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* AI Agents */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">AI Agents</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-1">
+                    {AI_AGENTS.map((agent) => (
                       <Button
-                        key={tech}
-                        variant={formData.technologies.includes(tech) ? "default" : "outline"}
+                        key={agent}
+                        variant={formData.aiAgents.includes(agent) ? "default" : "outline"}
                         size="sm"
-                        onClick={() => handleTechToggle(tech)}
-                        className={formData.technologies.includes(tech) ? "bg-blue-600 hover:bg-blue-700" : ""}
+                        onClick={() => handleAgentToggle(agent)}
+                        className={`text-xs ${
+                          formData.aiAgents.includes(agent) 
+                            ? "bg-green-600 hover:bg-green-700 border-green-600" 
+                            : ""
+                        }`}
                       >
-                        {tech}
+                        {agent}
                       </Button>
                     ))}
                   </div>
                 </CardContent>
               </Card>
-            )}
 
-            {/* Tools (for Development category) */}
-            {formData.category === "Development" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tools</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div>
-                    <Input
-                      placeholder="e.g. VSCode, Postman, Docker"
-                      value={formData.tools.join(", ")}
-                      onChange={(e) => handleToolsChange(e.target.value)}
-                    />
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {formData.tools.map((tool) => (
-                        <Badge key={tool} variant="secondary">
-                          {tool}
-                        </Badge>
-                      ))}
+              {/* Technologies (for Development category) */}
+              {formData.category === "Development" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Technologies</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-32 overflow-y-auto">
+                      <div className="flex flex-wrap gap-1">
+                        {TECHNOLOGIES.map((tech) => (
+                          <Button
+                            key={tech}
+                            variant={formData.technologies.includes(tech) ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleTechToggle(tech)}
+                            className={`text-xs ${
+                              formData.technologies.includes(tech) 
+                                ? "bg-blue-600 hover:bg-blue-700 border-blue-600" 
+                                : ""
+                            }`}
+                          >
+                            {tech}
+                          </Button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              )}
 
-            {/* Content Editor */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Prompt Content</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="prose prose-lg max-w-none">
-                  <textarea
-                    id="prompt-editor"
-                    value={editedContent}
-                    onChange={(e) => setEditedContent(e.target.value)}
-                    className="w-full min-h-[40vh] p-6 text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono"
-                    placeholder="Edit your prompt here..."
-                    style={{
-                      fontSize: `${fontSize}px`,
-                      fontFamily: fontFamily,
-                    }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+              {/* Tools (for Development category) */}
+              {formData.category === "Development" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Tools</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div>
+                      <Input
+                        placeholder="e.g. VSCode, Postman"
+                        value={formData.tools.join(", ")}
+                        onChange={(e) => handleToolsChange(e.target.value)}
+                        className="text-sm"
+                      />
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {formData.tools.map((tool) => (
+                          <Badge key={tool} variant="secondary" className="text-xs">
+                            {tool}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         ) : (
           // Non-owner editing - simple editor
@@ -704,18 +799,26 @@ export default function EditPromptPage() {
             </CardHeader>
             
             <CardContent>
-              <div className="prose prose-lg max-w-none">
-                <textarea
+              <div className="prose prose-lg max-w-none relative">
+                <div
                   id="prompt-editor"
-                  value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  className="w-full min-h-[60vh] p-6 text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono"
-                  placeholder="Edit your prompt here..."
+                  contentEditable
+                  dangerouslySetInnerHTML={{ __html: editedContent }}
+                  onInput={handleEditorChange}
+                  onPaste={handleEditorPaste}
+                  onFocus={handleEditorFocus}
+                  onBlur={handleEditorBlur}
+                  className="w-full min-h-[70vh] p-6 text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono outline-none"
                   style={{
                     fontSize: `${fontSize}px`,
                     fontFamily: fontFamily,
                   }}
                 />
+                {showPlaceholder && (
+                  <div className="absolute top-6 left-6 text-gray-500 dark:text-gray-400 pointer-events-none">
+                    <p>Start typing your prompt here...</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
