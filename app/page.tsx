@@ -50,7 +50,7 @@ export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedAgent, setSelectedAgent] = useState("all")
-  const [selectedAgentForFilter, setSelectedAgentForFilter] = useState("")
+  const [selectedAgentForFilter, setSelectedAgentForFilter] = useState<string>("all")
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("")
   const [selectedPromptForModal, setSelectedPromptForModal] = useState<Prompt | null>(null)
   const [chatAgent, setChatAgent] = useState<{ agent: string; prompt: string } | null>(null)
@@ -102,7 +102,7 @@ export default function HomePage() {
       filtered = filtered.filter((prompt) => prompt.aiAgents.includes(selectedAgent))
     }
 
-    if (selectedAgentForFilter) {
+    if (selectedAgentForFilter && selectedAgentForFilter !== "all") {
       filtered = filtered.filter((prompt) => prompt.aiAgents.includes(selectedAgentForFilter))
     }
 
@@ -189,37 +189,41 @@ export default function HomePage() {
         )}
 
         {/* Main Content */}
-        <main className={`flex-1 px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 ${
+        <main className={`flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-8 transition-all duration-300 ${
           isSidebarOpen ? 'lg:ml-80' : ''
         }`}>
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Discover AI Prompts</h1>
-                <p className="text-gray-600 dark:text-gray-400">Browse and share the best prompts for AI agents</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">Discover AI Prompts</h1>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Browse and share the best prompts for AI agents</p>
               </div>
-              <div className="flex items-center gap-2">
-                <DevModeToggle isDevMode={isDevMode} onToggle={setIsDevMode} />
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <button
-                  className="px-3 py-2 rounded-md border border-green-600 text-green-700 bg-white dark:bg-gray-900 hover:bg-green-50 dark:hover:bg-green-900 transition-colors"
+                  className="px-3 py-2 text-sm rounded-md border border-green-600 text-green-700 bg-white dark:bg-gray-900 hover:bg-green-50 dark:hover:bg-green-900 transition-colors"
                   onClick={() => setShowAIAgentCollections((prev) => !prev)}
                 >
                   {showAIAgentCollections ? "Hide" : "Browse by AI Agent"}
                 </button>
               </div>
             </div>
+            
+            {/* Dev Mode Toggle - Positioned on the right */}
+            <div className="flex justify-end mb-4">
+              <DevModeToggle isDevMode={isDevMode} onToggle={setIsDevMode} />
+            </div>
           </div>
 
           {/* AI Agent Collections */}
           {showAIAgentCollections && (
-            <div className="mb-8">
+            <div className="mb-6 sm:mb-8">
               <AIAgentCollections onAgentSelect={setSelectedAgentForFilter} selectedAgent={selectedAgentForFilter} />
             </div>
           )}
 
           {/* Search and Filters */}
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6 mb-8">
-            <div className="flex flex-col md:flex-row gap-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6 mb-6 sm:mb-8">
+            <div className="flex flex-col gap-4">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -232,9 +236,9 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -247,12 +251,12 @@ export default function HomePage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-                  <SelectTrigger className="w-[180px]">
+                <Select value={selectedAgentForFilter} onValueChange={setSelectedAgentForFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="AI Agent" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Agents</SelectItem>
+                    <SelectItem value="all">All AI Agents</SelectItem>
                     {AI_AGENTS.map((agent) => (
                       <SelectItem key={agent} value={agent}>
                         {agent}
@@ -266,13 +270,13 @@ export default function HomePage() {
 
           {/* Prompts Grid */}
           {filteredPrompts.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400 text-lg">
+            <div className="text-center py-8 sm:py-12">
+              <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg">
                 {prompts.length === 0 ? "No prompts found. Be the first to add one!" : "No prompts match your filters."}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredPrompts.map((prompt) => (
                 <div key={prompt._id} id={`prompt-${prompt._id}`}>
                   <PromptCard

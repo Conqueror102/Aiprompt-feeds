@@ -129,17 +129,17 @@ This interface demonstrates how the chat would work with real AI integration.`,
   const theme = getAgentTheme(agentName)
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className={`w-full max-w-4xl h-[90vh]  flex flex-col ${theme.bg}`}>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+      <Card className={`w-full max-w-4xl h-[95vh] sm:h-[90vh] flex flex-col ${theme.bg}`}>
         <CardHeader className="border-b">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl">{theme.logo}</div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="text-2xl sm:text-3xl">{theme.logo}</div>
               <div>
-                <CardTitle className={`${theme.accent} text-xl`}>{agentName} Chat</CardTitle>
-                <p className="text-sm text-gray-600 dark:text-gray-400">AI-powered conversation interface</p>
+                <CardTitle className={`${theme.accent} text-lg sm:text-xl`}>{agentName} Chat</CardTitle>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">AI-powered conversation interface</p>
               </div>
-              <Badge variant="secondary" className="ml-2">
+              <Badge variant="secondary" className="ml-2 text-xs">
                 <Zap className="h-3 w-3 mr-1" />
                 Demo Mode
               </Badge>
@@ -154,59 +154,59 @@ This interface demonstrates how the chat would work with real AI integration.`,
               >
                 <ArrowUpRight className="h-4 w-4" />
               </Button>
-              <Button variant="outline" onClick={onClose}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+              <Button variant="outline" size="sm" onClick={onClose}>
+                <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Back</span>
               </Button>
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="flex-1 flex flex-col p-0  overflow-scroll">
+        <CardContent className="flex-1 flex flex-col p-0 overflow-scroll">
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4 ">
+          <ScrollArea className="flex-1 p-3 sm:p-4">
             {messages.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">{theme.logo}</div>
-                <h3 className={`text-lg font-semibold ${theme.accent} mb-2`}>Welcome to {agentName} Chat</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
+              <div className="text-center py-8 sm:py-12">
+                <div className="text-4xl sm:text-6xl mb-4">{theme.logo}</div>
+                <h3 className={`text-base sm:text-lg font-semibold ${theme.accent} mb-2`}>Welcome to {agentName} Chat</h3>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4">
                   This is a demo interface. Start a conversation to see how it would work!
                 </p>
                 {initialPrompt && (
-                  <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 text-sm">
+                  <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 text-xs sm:text-sm">
                     <p className="font-medium mb-1">Ready to use prompt:</p>
                     <p className="text-gray-600 dark:text-gray-400">{initialPrompt.slice(0, 100)}...</p>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                    className={`flex gap-2 sm:gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
                   >
                     {message.role === "assistant" && (
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
                         <AvatarFallback className={`${theme.bg} ${theme.accent}`}>
-                          <Bot className="h-4 w-4" />
+                          <Bot className="h-3 w-3 sm:h-4 sm:w-4" />
                         </AvatarFallback>
                       </Avatar>
                     )}
 
                     <div
-                      className={`max-w-[70%] rounded-lg p-3 ${
+                      className={`max-w-[85%] sm:max-w-[70%] rounded-lg p-2 sm:p-3 ${
                         message.role === "user" ? "bg-green-600 text-white" : "bg-white dark:bg-gray-800 border"
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <p className="text-xs sm:text-sm whitespace-pre-wrap">{message.content}</p>
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-xs opacity-70">{message.timestamp.toLocaleTimeString()}</span>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleCopyMessage(message.content)}
-                          className="h-6 w-6 p-0"
+                          className="h-5 w-5 sm:h-6 sm:w-6 p-0"
                         >
                           <Copy className="h-3 w-3" />
                         </Button>
@@ -214,55 +214,30 @@ This interface demonstrates how the chat would work with real AI integration.`,
                     </div>
 
                     {message.role === "user" && (
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
                         <AvatarFallback className="bg-green-100 text-green-600">
-                          <User className="h-4 w-4" />
+                          <User className="h-3 w-3 sm:h-4 sm:w-4" />
                         </AvatarFallback>
                       </Avatar>
                     )}
                   </div>
                 ))}
-
-                {isLoading && (
-                  <div className="flex gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className={`${theme.bg} ${theme.accent}`}>
-                        <Bot className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="bg-white dark:bg-gray-800 border rounded-lg p-3">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div
-                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.1s" }}
-                        ></div>
-                        <div
-                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.2s" }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
-            <div ref={messagesEndRef} />
           </ScrollArea>
 
-          {/* Input */}
-          <div className="border-t p-4">
+          {/* Input Area */}
+          <div className="border-t p-3 sm:p-4">
             <div className="flex gap-2">
-              <textarea
+              <Input
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder={`Message ${agentName}...`}
-                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                onKeyPress={handleSendMessage}
+                placeholder="Type your message..."
+                className="flex-1"
                 disabled={isLoading}
-                className="flex max-h-56 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                  
               />
-              <Button onClick={handleSendMessage} disabled={isLoading || !inputValue.trim()} className={theme.accent}>
+              <Button onClick={handleSendMessage} disabled={!inputValue.trim() || isLoading} size="sm">
                 <Send className="h-4 w-4" />
               </Button>
             </div>

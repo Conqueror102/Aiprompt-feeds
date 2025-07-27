@@ -22,7 +22,7 @@ export default function DevModeInterface({ prompts, currentUserId, onDeactivate 
   const [selectedTech, setSelectedTech] = useState<string>("")
   const [filteredPrompts, setFilteredPrompts] = useState(prompts)
   const [selectedPrompt, setSelectedPrompt] = useState<any>(null)
-  const [selectedAgent, setSelectedAgent] = useState<string>("")
+  const [selectedAgent, setSelectedAgent] = useState<string>("none")
 
   // Debug: Log prompts to see what data we're receiving
   useEffect(() => {
@@ -121,10 +121,10 @@ export default function DevModeInterface({ prompts, currentUserId, onDeactivate 
 
       <div className="max-w-7xl mx-auto p-4">
         {/* Tech Stack Filter */}
-        <Card className="mb-6 bg-gray-800 border-green-500/30">
+        <Card className="mb-4 sm:mb-6 bg-gray-800 border-green-500/30">
           <CardHeader>
-            <CardTitle className="text-green-400 flex items-center gap-2">
-              <Zap className="h-5 w-5" />
+            <CardTitle className="text-green-400 flex items-center gap-2 text-base sm:text-lg">
+              <Zap className="h-4 w-4 sm:h-5 sm:w-5" />
               Detected Technologies
             </CardTitle>
           </CardHeader>
@@ -134,7 +134,7 @@ export default function DevModeInterface({ prompts, currentUserId, onDeactivate 
                 <Badge
                   key={tech}
                   variant={selectedTech === tech ? "default" : "outline"}
-                  className={`cursor-pointer transition-all ${
+                  className={`cursor-pointer transition-all text-xs ${
                     selectedTech === tech
                       ? "bg-green-600 text-white border-green-400"
                       : "bg-gray-700 text-green-400 border-green-500/30 hover:bg-green-900/30"
@@ -150,40 +150,40 @@ export default function DevModeInterface({ prompts, currentUserId, onDeactivate 
         </Card>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <Card className="bg-gray-800 border-green-500/30">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center gap-2">
-                <Code className="h-5 w-5 text-green-400" />
+                <Code className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
                 <div>
-                  <p className="text-green-400 font-bold text-lg">{filteredPrompts.length}</p>
-                  <p className="text-green-300/70 text-sm">Dev Prompts</p>
+                  <p className="text-green-400 font-bold text-base sm:text-lg">{filteredPrompts.length}</p>
+                  <p className="text-green-300/70 text-xs sm:text-sm">Dev Prompts</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gray-800 border-green-500/30">
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center gap-2">
-                <Tag className="h-5 w-5 text-green-400" />
+                <Tag className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
                 <div>
-                  <p className="text-green-400 font-bold text-lg">{getAllTechs().length}</p>
-                  <p className="text-green-300/70 text-sm">Technologies</p>
+                  <p className="text-green-400 font-bold text-base sm:text-lg">{getAllTechs().length}</p>
+                  <p className="text-green-300/70 text-xs sm:text-sm">Technologies</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-800 border-green-500/30">
-            <CardContent className="p-4">
+          <Card className="bg-gray-800 border-green-500/30 sm:col-span-2 lg:col-span-1">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-green-400" />
+                <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
                 <div>
-                  <p className="text-green-400 font-bold text-lg">
+                  <p className="text-green-400 font-bold text-base sm:text-lg">
                     {filteredPrompts.reduce((sum, p) => sum + p.likes, 0)}
                   </p>
-                  <p className="text-green-300/70 text-sm">Total Likes</p>
+                  <p className="text-green-300/70 text-xs sm:text-sm">Total Likes</p>
                 </div>
               </div>
             </CardContent>
@@ -193,14 +193,14 @@ export default function DevModeInterface({ prompts, currentUserId, onDeactivate 
         {/* Prompts Grid */}
         {filteredPrompts.length === 0 ? (
           <Card className="bg-gray-800 border-green-500/30">
-            <CardContent className="text-center py-12">
-              <Terminal className="h-16 w-16 text-green-400/50 mx-auto mb-4" />
-              <h3 className="text-green-400 text-lg font-bold mb-2">// No dev prompts found</h3>
-              <p className="text-green-300/70">Try adjusting your search or technology filters</p>
+            <CardContent className="text-center py-8 sm:py-12">
+              <Terminal className="h-12 w-12 sm:h-16 sm:w-16 text-green-400/50 mx-auto mb-4" />
+              <h3 className="text-green-400 text-base sm:text-lg font-bold mb-2">// No dev prompts found</h3>
+              <p className="text-green-300/70 text-sm">Try adjusting your search or technology filters</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredPrompts.map((prompt) => (
               <div key={prompt._id} className="relative">
                 <PromptCard 
@@ -350,6 +350,7 @@ export default function DevModeInterface({ prompts, currentUserId, onDeactivate 
                       <SelectValue placeholder="Select AI Agent" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Select AI Agent</SelectItem>
                       {AI_AGENTS.map((agent) => (
                         <SelectItem key={agent} value={agent}>
                           {agent}
@@ -359,8 +360,8 @@ export default function DevModeInterface({ prompts, currentUserId, onDeactivate 
                   </Select>
                   
                   <Button 
-                    onClick={() => selectedAgent && handleOpenChat(selectedAgent, selectedPrompt.content)}
-                    disabled={!selectedAgent}
+                    onClick={() => selectedAgent !== "none" && handleOpenChat(selectedAgent, selectedPrompt.content)}
+                    disabled={selectedAgent === "none"}
                     className="bg-green-600 hover:bg-green-700 text-white"
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />

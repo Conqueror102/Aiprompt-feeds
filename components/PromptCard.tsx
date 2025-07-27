@@ -154,21 +154,21 @@ export default function PromptCard({
     }`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-green-100 text-green-600 text-sm">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
+              <AvatarFallback className="bg-green-100 text-green-600 text-xs sm:text-sm">
                 {prompt.createdBy.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-sm font-medium">{prompt.createdBy.name}</p>
+              <p className="text-xs sm:text-sm font-medium">{prompt.createdBy.name}</p>
               <p className="text-xs text-muted-foreground">{new Date(prompt.createdAt).toLocaleDateString()}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-2 sm:gap-3 ml-auto">
             {typeof prompt.rating === 'number' && (
               <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                <Star className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-400 fill-yellow-400" />
                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
                   {prompt.rating.toFixed(1)}
                 </span>
@@ -202,18 +202,18 @@ export default function PromptCard({
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold line-clamp-2">{prompt.title}</h3>
-          {prompt.description && <p className="text-sm text-muted-foreground line-clamp-2">{prompt.description}</p>}
+          <h3 className="text-base sm:text-lg font-semibold line-clamp-2">{prompt.title}</h3>
+          {prompt.description && <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{prompt.description}</p>}
         </div>
       </CardHeader>
 
       <CardContent className="pb-3">
-        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 mb-4">
-          <p className="text-sm font-mono line-clamp-4 whitespace-pre-wrap">{prompt.content}</p>
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
+          <p className="text-xs sm:text-sm font-mono line-clamp-4 whitespace-pre-wrap">{prompt.content}</p>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-3">
-          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+        <div className="flex flex-wrap gap-1 sm:gap-2 mb-3">
+          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">
             {prompt.category}
           </Badge>
           {prompt.aiAgents.map((agent) => (
@@ -235,8 +235,8 @@ export default function PromptCard({
                 liked ? "text-red-500 hover:text-red-600" : "text-gray-500 hover:text-red-500"
               }`}
             >
-              <Heart className={`h-4 w-4 mr-1 ${liked ? "fill-current" : ""}`} />
-              {likesCount}
+              <Heart className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 ${liked ? "fill-current" : ""}`} />
+              <span className="text-xs sm:text-sm">{likesCount}</span>
             </Button>
 
             <Button
@@ -247,18 +247,18 @@ export default function PromptCard({
                 saved ? "text-blue-500 hover:text-blue-600" : "text-gray-500 hover:text-blue-500"
               }`}
             >
-              <Bookmark className={`h-4 w-4 mr-1 ${saved ? "fill-current" : ""}`} />
-              Save
+              <Bookmark className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 ${saved ? "fill-current" : ""}`} />
+              <span className="hidden sm:inline">Save</span>
             </Button>
           </div>
 
           <Button
             onClick={handleCopy}
             size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white hover:scale-105 transition-transform"
+            className="bg-green-600 hover:bg-green-700 text-white hover:scale-105 transition-transform text-xs"
           >
-            <Copy className="h-4 w-4 mr-2" />
-            Copy
+            <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Copy</span>
           </Button>
         </div>
       </CardFooter>

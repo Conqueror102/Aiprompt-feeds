@@ -609,16 +609,16 @@ export default function EditPromptPage() {
       </div>
 
       {/* Editor */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {isOwner ? (
           // Owner editing - content first, then sidebar
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* Main Content Editor - Takes 3/4 of space */}
             <div className="lg:col-span-3">
-              <Card className="min-h-[80vh] border-green-200 dark:border-green-700">
+              <Card className="min-h-[60vh] sm:min-h-[80vh] border-green-200 dark:border-green-700">
                 <CardHeader className="bg-green-50 dark:bg-green-900/20">
-                  <CardTitle className="text-green-800 dark:text-green-200">Edit Prompt Content</CardTitle>
-                  <p className="text-sm text-green-600 dark:text-green-400">Focus on editing your prompt content here</p>
+                  <CardTitle className="text-green-800 dark:text-green-200 text-lg sm:text-xl">Edit Prompt Content</CardTitle>
+                  <p className="text-xs sm:text-sm text-green-600 dark:text-green-400">Focus on editing your prompt content here</p>
                 </CardHeader>
                 <CardContent>
                   <div className="prose prose-lg max-w-none relative">
@@ -630,14 +630,14 @@ export default function EditPromptPage() {
                       onPaste={handleEditorPaste}
                       onFocus={handleEditorFocus}
                       onBlur={handleEditorBlur}
-                      className="w-full min-h-[70vh] p-6 text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono outline-none focus:ring-2 focus:ring-green-500/20"
+                      className="w-full min-h-[50vh] sm:min-h-[70vh] p-3 sm:p-6 text-sm sm:text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono outline-none focus:ring-2 focus:ring-green-500/20"
                       style={{
                         fontSize: `${fontSize}px`,
                         fontFamily: fontFamily,
                       }}
                     />
                     {showPlaceholder && (
-                      <div className="absolute top-6 left-6 text-green-400 dark:text-green-500 pointer-events-none">
+                      <div className="absolute top-3 sm:top-6 left-3 sm:left-6 text-green-400 dark:text-green-500 pointer-events-none text-sm sm:text-base">
                         <p>Start typing your prompt here...</p>
                       </div>
                     )}
@@ -647,13 +647,13 @@ export default function EditPromptPage() {
             </div>
 
             {/* Sidebar with other fields - Takes 1/4 of space */}
-            <div className="lg:col-span-1 space-y-4">
+            <div className="lg:col-span-1 space-y-4 sm:space-y-6">
               {/* Basic Info */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Basic Info</CardTitle>
+                  <CardTitle className="text-base sm:text-lg">Basic Info</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-3 sm:space-y-4">
                   <div>
                     <Label htmlFor="title" className="text-sm">Title</Label>
                     <Input
@@ -780,48 +780,76 @@ export default function EditPromptPage() {
           </div>
         ) : (
           // Non-owner editing - simple editor
-          <Card className="min-h-[80vh]">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-xl">{prompt.title}</CardTitle>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Created by {prompt.createdBy.name} • {new Date(prompt.createdAt).toLocaleDateString()}
-                  </p>
+          <div className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">Edit Prompt</h1>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                  This is a temporary editing environment. Your changes won't be saved to the original prompt.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  onClick={handleCopy}
+                  variant="outline"
+                  className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/20"
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy Edited
+                </Button>
+                <Button
+                  onClick={handleStartChat}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Start Chat
+                </Button>
+              </div>
+            </div>
+
+            <Card className="min-h-[60vh] sm:min-h-[80vh]">
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <CardTitle className="text-lg sm:text-xl">{prompt.title}</CardTitle>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                      Created by {prompt.createdBy.name} • {new Date(prompt.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">{prompt.category}</Badge>
+                    {prompt.rating && (
+                      <Badge variant="outline" className="text-xs">⭐ {prompt.rating.toFixed(1)}</Badge>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{prompt.category}</Badge>
-                  {prompt.rating && (
-                    <Badge variant="outline">⭐ {prompt.rating.toFixed(1)}</Badge>
+              </CardHeader>
+              
+              <CardContent>
+                <div className="prose prose-lg max-w-none relative">
+                  <div
+                    id="prompt-editor"
+                    contentEditable
+                    dangerouslySetInnerHTML={{ __html: editedContent }}
+                    onInput={handleEditorChange}
+                    onPaste={handleEditorPaste}
+                    onFocus={handleEditorFocus}
+                    onBlur={handleEditorBlur}
+                    className="w-full min-h-[50vh] sm:min-h-[70vh] p-3 sm:p-6 text-sm sm:text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono outline-none"
+                    style={{
+                      fontSize: `${fontSize}px`,
+                      fontFamily: fontFamily,
+                    }}
+                  />
+                  {showPlaceholder && (
+                    <div className="absolute top-3 sm:top-6 left-3 sm:left-6 text-gray-500 dark:text-gray-400 pointer-events-none text-sm sm:text-base">
+                      <p>Start typing your prompt here...</p>
+                    </div>
                   )}
                 </div>
-              </div>
-            </CardHeader>
-            
-            <CardContent>
-              <div className="prose prose-lg max-w-none relative">
-                <div
-                  id="prompt-editor"
-                  contentEditable
-                  dangerouslySetInnerHTML={{ __html: editedContent }}
-                  onInput={handleEditorChange}
-                  onPaste={handleEditorPaste}
-                  onFocus={handleEditorFocus}
-                  onBlur={handleEditorBlur}
-                  className="w-full min-h-[70vh] p-6 text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono outline-none"
-                  style={{
-                    fontSize: `${fontSize}px`,
-                    fontFamily: fontFamily,
-                  }}
-                />
-                {showPlaceholder && (
-                  <div className="absolute top-6 left-6 text-gray-500 dark:text-gray-400 pointer-events-none">
-                    <p>Start typing your prompt here...</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>

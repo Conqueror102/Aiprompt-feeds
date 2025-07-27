@@ -55,13 +55,13 @@ export default function AIAgentCollections({ onAgentSelect, selectedAgent }: AIA
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
         {AI_AGENTS.map((agent) => (
           <Card key={agent} className="animate-pulse">
-            <CardContent className="p-4 text-center">
-              <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-2"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
-              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto"></div>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="h-8 w-8 sm:h-12 sm:w-12 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-2"></div>
+              <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+              <div className="h-2 sm:h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto"></div>
             </CardContent>
           </Card>
         ))}
@@ -72,11 +72,11 @@ export default function AIAgentCollections({ onAgentSelect, selectedAgent }: AIA
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Browse by AI Agent</h2>
-        <p className="text-gray-600 dark:text-gray-400">Discover prompts for your favorite AI platforms</p>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">Browse by AI Agent</h2>
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Discover prompts for your favorite AI platforms</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
         {AI_AGENTS.map((agent) => (
           <Card
             key={agent}
@@ -87,9 +87,9 @@ export default function AIAgentCollections({ onAgentSelect, selectedAgent }: AIA
             }`}
             onClick={() => onAgentSelect(agent)}
           >
-            <CardContent className="p-4 text-center">
-              <div className="text-4xl mb-2">{getAgentLogo(agent)}</div>
-              <h3 className="font-semibold text-sm text-gray-900 dark:text-white mb-1">{agent}</h3>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-2xl sm:text-4xl mb-2">{getAgentLogo(agent)}</div>
+              <h3 className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white mb-1">{agent}</h3>
               <Badge variant="secondary" className="text-xs">
                 {agentStats[agent] || 0} prompts
               </Badge>

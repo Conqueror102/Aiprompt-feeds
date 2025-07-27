@@ -46,7 +46,7 @@ export default function Navbar({ user, onSidebarToggle, isSidebarOpen }: NavbarP
     <nav className="sticky top-0 z-30 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm backdrop-blur">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             {onSidebarToggle && (
               <button
                 className={`p-2 rounded-md border transition-colors ${
@@ -60,7 +60,7 @@ export default function Navbar({ user, onSidebarToggle, isSidebarOpen }: NavbarP
                 <Menu className="h-5 w-5" />
               </button>
             )}
-            <Link href="/" className="text-2xl font-bold text-gray-900 dark:text-white">
+            <Link href="/" className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
               AI<span className="text-green-600">Prompts</span>
             </Link>
             <div className="hidden md:flex space-x-6">
@@ -73,7 +73,7 @@ export default function Navbar({ user, onSidebarToggle, isSidebarOpen }: NavbarP
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
@@ -82,8 +82,8 @@ export default function Navbar({ user, onSidebarToggle, isSidebarOpen }: NavbarP
               <>
                 <Link href="/add-prompt">
                   <Button className="bg-green-600 hover:bg-green-700 text-white">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Prompt
+                    <Plus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Add Prompt</span>
                   </Button>
                 </Link>
 
@@ -134,10 +134,10 @@ export default function Navbar({ user, onSidebarToggle, isSidebarOpen }: NavbarP
             ) : (
               <div className="flex space-x-2">
                 <Link href="/login">
-                  <Button variant="ghost">Sign In</Button>
+                  <Button variant="ghost" size="sm">Sign In</Button>
                 </Link>
                 <Link href="/register">
-                  <Button className="bg-green-600 hover:bg-green-700 text-white">Sign Up</Button>
+                  <Button size="sm">Sign Up</Button>
                 </Link>
               </div>
             )}
