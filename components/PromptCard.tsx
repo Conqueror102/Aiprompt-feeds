@@ -150,7 +150,7 @@ export default function PromptCard({
 
   return (
     <Card className={`w-full hover:shadow-lg transition-all duration-200 ${
-      highlight ? 'border-2 border-green-500 shadow-lg' : 'border border-transparent'
+      highlight ? 'border-2 border-green-500 shadow-lg' : 'border border-green-500/40'
     }`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
