@@ -64,6 +64,7 @@ export default function PromptSidebar({
       </div>
 
       {/* Toggle Category Filter */}
+           {/* Toggle Category Filter */}
       <div className="p-4 flex flex-col gap-4 bg-white/80 dark:bg-gray-900/80">
         <button
           className="w-full py-2 px-4 rounded-full bg-white/60 dark:bg-gray-800/60 shadow backdrop-blur font-semibold flex items-center justify-center gap-2 hover:bg-green-100 dark:hover:bg-green-900 transition-colors border border-green-100 dark:border-green-900"
@@ -95,7 +96,22 @@ export default function PromptSidebar({
           </div>
         )}
       </div>
-      
+
+
+      {/* Search Input - Mobile Only */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-800 sm:hidden">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search prompts by title..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+    
       {/* Prompt Titles List */}
       <ScrollArea className="flex-1 px-4">
         <div className="space-y-3 pb-4">
@@ -114,7 +130,13 @@ export default function PromptSidebar({
                       ? "bg-green-600 text-white scale-105 shadow-lg ring-2 ring-green-400"
                       : "bg-white/70 dark:bg-gray-800/70 text-gray-900 dark:text-white hover:bg-green-50 dark:hover:bg-green-900 hover:scale-105 hover:shadow-md border border-green-100 dark:border-green-900"}
                   `}
-                  onClick={() => onPromptSelect(prompt._id)}
+                  onClick={() => {
+                    onPromptSelect(prompt._id)
+                    // Close modal on mobile after selecting a prompt
+                    if (onClose) {
+                      onClose()
+                    }
+                  }}
                 >
                   <span className="truncate">{prompt.title}</span>
                   {isActive && (
