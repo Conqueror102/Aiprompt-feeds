@@ -23,7 +23,8 @@ import {
   X,
   Strikethrough,
   Type,
-  RotateCcw
+  RotateCcw,
+  Copy
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -801,7 +802,7 @@ export default function EditPromptPage() {
                   onClick={handleStartChat}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
-                  <MessageSquare className="mr-2 h-4 w-4" />
+                  <Send className="mr-2 h-4 w-4" />
                   Start Chat
                 </Button>
               </div>
