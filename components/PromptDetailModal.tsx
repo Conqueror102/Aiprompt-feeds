@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Copy, MessageSquare, Heart, Bookmark, Calendar, Tag, Zap, Star, Edit3 } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -161,38 +161,41 @@ export default function PromptDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] sm:max-h-[90vh] h-[95vh] sm:h-auto overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-start justify-between">
             <div className="flex-1 pr-4">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{prompt.title}</h2>
-              {prompt.description && <p className="text-gray-600 dark:text-gray-400 text-sm">{prompt.description}</p>}
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">{prompt.title}</h2>
+              {prompt.description && <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">{prompt.description}</p>}
             </div>
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Prompt details and actions
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Author and Meta Info */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center space-x-3">
-              <Avatar className="h-10 w-10">
+              <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                 <AvatarFallback className="bg-green-100 text-green-600">
                   {prompt.createdBy.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">{prompt.createdBy.name}</p>
-                <div className="flex items-center text-sm text-gray-500 space-x-4">
+                <p className="font-medium text-gray-900 dark:text-white text-sm sm:text-base">{prompt.createdBy.name}</p>
+                <div className="flex flex-col sm:flex-row sm:items-center text-xs sm:text-sm text-gray-500 space-y-1 sm:space-y-0 sm:space-x-4">
                   <span className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
+                    <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                     {new Date(prompt.createdAt).toLocaleDateString()}
                   </span>
                   <span className="flex items-center">
-                    <Heart className="h-4 w-4 mr-1" />
+                    <Heart className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                     {prompt.likes} likes
                   </span>
                   <span className="flex items-center">
-                    <Bookmark className="h-4 w-4 mr-1" />
+                    <Bookmark className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                     {prompt.saves} saves
                   </span>
                 </div>
@@ -201,9 +204,9 @@ export default function PromptDetailModal({
           </div>
 
           {/* Tags */}
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-              <Tag className="h-3 w-3 mr-1" />
+          <div className="flex flex-wrap gap-1 sm:gap-2">
+            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">
+              <Tag className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
               {prompt.category}
             </Badge>
             {prompt.aiAgents.map((agent) => (
@@ -214,10 +217,10 @@ export default function PromptDetailModal({
           </div>
 
           {/* Prompt Content */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Prompt Content</h3>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 border">
-              <pre className="text-sm font-mono whitespace-pre-wrap text-gray-800 dark:text-gray-200 leading-relaxed">
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Prompt Content</h3>
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 sm:p-6 border">
+              <pre className="text-xs sm:text-sm font-mono whitespace-pre-wrap text-gray-800 dark:text-gray-200 leading-relaxed">
                 {prompt.content}
               </pre>
             </div>
@@ -225,7 +228,7 @@ export default function PromptDetailModal({
 
           {/* Star Rating Input */}
           <div className="flex flex-col items-start gap-2 pt-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Rate this prompt:</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200">Rate this prompt:</span>
             <div className="flex items-center gap-1">
               {[1,2,3,4,5].map((star) => (
                 <button
@@ -238,7 +241,7 @@ export default function PromptDetailModal({
                   className="focus:outline-none"
                 >
                   <Star
-                    className={`h-6 w-6 transition-colors ${
+                    className={`h-5 w-5 sm:h-6 sm:w-6 transition-colors ${
                       (hoverRating || userRating) >= star ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
                     }`}
                   />
@@ -251,28 +254,30 @@ export default function PromptDetailModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
-            <div className="flex gap-2">
-              <Button onClick={handleCopy} variant="outline" className="flex-1 bg-transparent">
-                <Copy className="h-4 w-4 mr-2" />
-                Copy to Clipboard
+          <div className="flex flex-col gap-3 sm:gap-4 pt-4 border-t">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={handleCopy} variant="outline" className="flex-1 bg-transparent text-xs sm:text-sm">
+                <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                <span className="hidden sm:inline">Copy to Clipboard</span>
+                <span className="sm:hidden">Copy</span>
               </Button>
               
               {isOwner && (
                 <Button 
                   onClick={handleEditPrompt}
                   variant="outline" 
-                  className="flex-1 bg-transparent"
+                  className="flex-1 bg-transparent text-xs sm:text-sm"
                 >
-                  <Edit3 className="h-4 w-4 mr-2" />
-                  Edit Prompt
+                  <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                  <span className="hidden sm:inline">Edit Prompt</span>
+                  <span className="sm:hidden">Edit</span>
                 </Button>
               )}
             </div>
 
             <div className="flex-1 space-y-2">
               <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-                <SelectTrigger>
+                <SelectTrigger className="text-xs sm:text-sm">
                   <SelectValue placeholder="Select AI Agent" />
                 </SelectTrigger>
                 <SelectContent>
@@ -284,10 +289,11 @@ export default function PromptDetailModal({
                 </SelectContent>
               </Select>
 
-              <Button onClick={handleRunChat} className="w-full bg-green-600 hover:bg-green-700 text-white">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                <Zap className="h-4 w-4 mr-1" />
-                Run Chat
+              <Button onClick={handleRunChat} className="w-full bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm">
+                <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                <Zap className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                <span className="hidden sm:inline">Run Chat</span>
+                <span className="sm:hidden">Chat</span>
               </Button>
             </div>
           </div>
