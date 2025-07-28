@@ -69,14 +69,20 @@ export default function ChatPage() {
     if (chatData) {
       const data = JSON.parse(chatData)
       setAgent(data.agent)
-      setMessages(data.messages || [])
+      
+      // Convert timestamps back to Date objects
+      const messagesWithDates = (data.messages || []).map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      }))
+      setMessages(messagesWithDates)
       
       // Create initial session
       const session: ChatSession = {
         id: Date.now().toString(),
         title: `Chat with ${data.agent}`,
         agent: data.agent,
-        messages: data.messages || [],
+        messages: messagesWithDates,
         createdAt: new Date(),
       }
       setCurrentSession(session)
@@ -275,20 +281,20 @@ export default function ChatPage() {
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-950 flex">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col`}>
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                <span className="text-green-600 dark:text-green-400 text-lg">🐱</span>
+      <div className={`${sidebarOpen ? 'w-full sm:w-80' : 'w-0'} transition-all duration-300 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col fixed sm:relative z-40 h-full`}>
+        <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-green-600 dark:text-green-400 text-base sm:text-lg">🐱</span>
               </div>
-              <h2 className="font-bold text-gray-900 dark:text-white">Cat Bot</h2>
+              <h2 className="font-bold text-gray-900 dark:text-white text-base sm:text-lg truncate">Cat Bot</h2>
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setSidebarOpen(false)}
-              className="md:hidden"
+              className="sm:hidden h-8 w-8 p-0 flex-shrink-0"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -296,31 +302,32 @@ export default function ChatPage() {
           
           <Button 
             onClick={handleNewChat}
-            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            className="w-full bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base h-10 sm:h-11"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            New Chat
+            <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+            <span className="hidden sm:inline">New Chat</span>
+            <span className="sm:hidden">New</span>
           </Button>
         </div>
 
         <div className="flex-1 overflow-hidden">
-          <div className="p-4">
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <div className="p-3 sm:p-4">
+            <div className="relative mb-3 sm:mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
               <Input
                 placeholder="Search chats..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-8 sm:pl-10 text-xs sm:text-sm"
               />
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4">
+          <div className="flex-1 overflow-y-auto px-3 sm:px-4">
             {filteredSessions.map((session) => (
               <div
                 key={session.id}
-                className={`mb-2 p-3 rounded-lg cursor-pointer transition-colors ${
+                className={`mb-2 p-2 sm:p-3 rounded-lg cursor-pointer transition-colors ${
                   currentSession?.id === session.id
                     ? "bg-green-100 dark:bg-green-900/20 border-l-4 border-green-500"
                     : "hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -329,17 +336,17 @@ export default function ChatPage() {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-gray-900 dark:text-white truncate">
+                    <h3 className="font-medium text-gray-900 dark:text-white truncate text-xs sm:text-sm">
                       {session.title}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                       {session.messages.length} messages
                     </p>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
+                      <Button variant="ghost" size="sm" className="h-6 w-6 sm:h-8 sm:w-8 p-0">
+                        <MoreHorizontal className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -373,62 +380,63 @@ export default function ChatPage() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col sm:ml-0">
         {/* Header */}
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+          <div className="flex items-center justify-between min-h-[60px]">
+            <div className="flex items-center gap-3 sm:gap-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="md:hidden"
+                className="sm:hidden h-10 w-10 p-0"
               >
-                <Menu className="h-4 w-4" />
+                <Menu className="h-5 w-5" />
               </Button>
               
-              <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-green-100 text-green-600">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
+                  <AvatarFallback className="bg-green-100 text-green-600 text-sm sm:text-base">
                     {agent?.charAt(0) || "A"}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h1 className="font-semibold text-gray-900 dark:text-white">
+                <div className="min-w-0 flex-1">
+                  <h1 className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg truncate">
                     {currentSession?.title || "New Chat"}
                   </h1>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm sm:text-base text-gray-500 truncate">
                     {agent || "AI Assistant"}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4" />
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <Button variant="ghost" size="sm" className="h-10 w-10 sm:h-11 sm:w-11 p-0">
+                <Settings className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => router.push("/")}
+                className="h-10 px-3 sm:h-11 sm:px-4 text-sm sm:text-base"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                <span className="hidden sm:inline">Back</span>
               </Button>
             </div>
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
           {messages.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🐱</div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            <div className="text-center py-8 sm:py-12">
+              <div className="text-4xl sm:text-6xl mb-3 sm:mb-4">🐱</div>
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 Welcome to Cat Bot Chat!
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4">
                 Start a conversation to see how it would work!
               </p>
             </div>
@@ -436,49 +444,52 @@ export default function ChatPage() {
             messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex gap-3 ${
+                className={`flex gap-2 sm:gap-3 ${
                   message.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
                 {message.role === "assistant" && (
-                  <Avatar className="h-8 w-8 flex-shrink-0">
-                    <AvatarFallback className="bg-green-100 text-green-600">
+                  <Avatar className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0">
+                    <AvatarFallback className="bg-green-100 text-green-600 text-xs sm:text-sm">
                       🐱
                     </AvatarFallback>
                   </Avatar>
                 )}
                 
-                <div className="max-w-[70%]">
+                <div className="max-w-[85%] sm:max-w-[70%]">
                   <div
-                    className={`rounded-lg px-4 py-2 ${
+                    className={`rounded-lg px-3 py-2 sm:px-4 sm:py-2 ${
                       message.role === "user"
                         ? "bg-green-600 text-white"
                         : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-xs sm:text-sm whitespace-pre-wrap">{message.content}</p>
                   </div>
                   
-                  <div className="flex items-center justify-between mt-2 px-1">
+                  <div className="flex items-center justify-between mt-1 sm:mt-2 px-1">
                     <span className="text-xs text-gray-500">
-                      {message.timestamp.toLocaleTimeString()}
+                      {message.timestamp instanceof Date 
+                        ? message.timestamp.toLocaleTimeString()
+                        : new Date(message.timestamp).toLocaleTimeString()
+                      }
                     </span>
                     <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleCopyMessage(message.content)}
-                        className="h-6 w-6 p-0"
+                        className="h-5 w-5 sm:h-6 sm:w-6 p-0"
                       >
-                        <Copy className="h-3 w-3" />
+                        <Copy className="h-2 w-2 sm:h-3 sm:w-3" />
                       </Button>
                       {message.role === "assistant" && (
                         <>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                            <ThumbsUp className="h-3 w-3" />
+                          <Button variant="ghost" size="sm" className="h-5 w-5 sm:h-6 sm:w-6 p-0">
+                            <ThumbsUp className="h-2 w-2 sm:h-3 sm:w-3" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                            <ThumbsDown className="h-3 w-3" />
+                          <Button variant="ghost" size="sm" className="h-5 w-5 sm:h-6 sm:w-6 p-0">
+                            <ThumbsDown className="h-2 w-2 sm:h-3 sm:w-3" />
                           </Button>
                         </>
                       )}
@@ -487,8 +498,8 @@ export default function ChatPage() {
                 </div>
 
                 {message.role === "user" && (
-                  <Avatar className="h-8 w-8 flex-shrink-0">
-                    <AvatarFallback className="bg-blue-100 text-blue-600">
+                  <Avatar className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0">
+                    <AvatarFallback className="bg-blue-100 text-blue-600 text-xs sm:text-sm">
                       U
                     </AvatarFallback>
                   </Avatar>
@@ -498,17 +509,17 @@ export default function ChatPage() {
           )}
 
           {isLoading && (
-            <div className="flex gap-3 justify-start">
-              <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarFallback className="bg-green-100 text-green-600">
+            <div className="flex gap-2 sm:gap-3 justify-start">
+              <Avatar className="h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0">
+                <AvatarFallback className="bg-green-100 text-green-600 text-xs sm:text-sm">
                   🐱
                 </AvatarFallback>
               </Avatar>
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2">
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 sm:px-4 sm:py-2">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
                 </div>
               </div>
             </div>
@@ -518,23 +529,23 @@ export default function ChatPage() {
         </div>
 
         {/* Input */}
-        <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4">
           <div className="flex gap-2">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask your cat bot anything... 🐱"
-              className="flex-1 resize-none"
+              className="flex-1 resize-none text-xs sm:text-sm"
               rows={1}
               disabled={isLoading}
             />
             <Button
               onClick={handleSendMessage}
               disabled={!input.trim() || isLoading}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-green-600 hover:bg-green-700 text-white h-8 w-8 sm:h-10 sm:w-auto p-0 sm:px-3"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </div>

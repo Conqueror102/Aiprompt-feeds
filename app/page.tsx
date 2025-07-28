@@ -17,6 +17,7 @@ import AIAgentCollections from "@/components/AIAgentCollections"
 import Footer from "@/components/Footer"
 import Navbar from "@/components/Navbar"
 import { useAuth } from "@/hooks/use-auth"
+import { useOpenSharedDialog } from "@/hooks/useOpenSharedDialog"
 import { AI_AGENTS, CATEGORIES } from "@/lib/constants"
 import { Search } from "lucide-react"
 
@@ -61,6 +62,10 @@ export default function HomePage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [showAIAgentCollections, setShowAIAgentCollections] = useState(false)
 
+  // Share functionality
+  const getPromptById = (id: string) => prompts.find(prompt => prompt._id === id)
+  const { sharedPrompt, closeDialog, loading: shareLoading } = useOpenSharedDialog(getPromptById)
+
   useEffect(() => {
     fetchPrompts()
   }, [])
@@ -68,6 +73,13 @@ export default function HomePage() {
   useEffect(() => {
     filterPrompts()
   }, [prompts, searchTerm, selectedCategory, selectedAgent, selectedAgentForFilter, selectedCategoryFilter])
+
+  // Handle shared prompts
+  useEffect(() => {
+    if (sharedPrompt) {
+      setSelectedPromptForModal(sharedPrompt)
+    }
+  }, [sharedPrompt])
 
   const fetchPrompts = async () => {
     try {
@@ -151,8 +163,13 @@ export default function HomePage() {
     }
   }
 
+  const handleCloseSharedDialog = () => {
+    closeDialog()
+    setSelectedPromptForModal(null)
+  }
+
   if (isDevMode) {
-    return <DevModeInterface prompts={prompts} currentUserId={user?.id} onDeactivate={() => setIsDevMode(false)} />
+    return <DevModeInterface prompts={prompts} currentUserId={user?.id || undefined} onDeactivate={() => setIsDevMode(false)} />
   }
 
   return (
@@ -292,7 +309,7 @@ export default function HomePage() {
                 <div key={prompt._id} id={`prompt-${prompt._id}`}>
                   <PromptCard
                     prompt={prompt}
-                    currentUserId={user?.id}
+                    currentUserId={user?.id || undefined}
                     onViewDetails={handleViewDetails}
                     isSelected={selectedPromptId === prompt._id}
                     tempSelectedPromptId={tempSelectedPromptId}
@@ -308,8 +325,8 @@ export default function HomePage() {
       <PromptDetailModal
         prompt={selectedPromptForModal}
         isOpen={!!selectedPromptForModal}
-        onClose={() => setSelectedPromptForModal(null)}
-        currentUserId={user?.id}
+        onClose={sharedPrompt ? handleCloseSharedDialog : () => setSelectedPromptForModal(null)}
+        currentUserId={user?.id || undefined}
         onOpenChat={handleOpenChat}
         onRated={handlePromptRated}
       />

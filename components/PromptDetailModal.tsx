@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Copy, MessageSquare, Heart, Bookmark, Calendar, Tag, Zap, Star, Edit3 } from "lucide-react"
+import { Copy, MessageSquare, Heart, Bookmark, Calendar, Tag, Zap, Star, Edit3, Share } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -97,6 +97,45 @@ export default function PromptDetailModal({
       })
     }
   }
+
+  const handleShare = async () => {
+    if (!prompt) return
+    
+    const shareLink = `${window.location.origin}?prompt=${prompt._id}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: prompt.title,
+          text: prompt.description || 'Check out this prompt!',
+          url: shareLink,
+        });
+      } catch (error) {
+        console.error('Share failed:', error);
+        // Fallback to clipboard
+        await handleCopyLink(shareLink);
+      }
+    } else {
+      // Fallback for browsers without native sharing
+      await handleCopyLink(shareLink);
+    }
+  };
+
+  const handleCopyLink = async (link: string) => {
+    try {
+      await navigator.clipboard.writeText(link);
+      toast({
+        title: "Link Copied!",
+        description: "Share link copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy link",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleRunChat = () => {
     if (!selectedAgent) {
@@ -260,6 +299,12 @@ export default function PromptDetailModal({
                 <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                 <span className="hidden sm:inline">Copy to Clipboard</span>
                 <span className="sm:hidden">Copy</span>
+              </Button>
+              
+              <Button onClick={handleShare} variant="outline" className="flex-1 bg-transparent text-xs sm:text-sm">
+                <Share className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                <span className="hidden sm:inline">Share</span>
+                <span className="sm:hidden">Share</span>
               </Button>
               
               {isOwner && (

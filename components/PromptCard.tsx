@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Heart, Bookmark, Copy, ExternalLink, MoreHorizontal, Eye, Star, Edit3 } from "lucide-react"
+import { Heart, Bookmark, Copy, ExternalLink, MoreHorizontal, Eye, Star, Edit3, Share } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
@@ -146,6 +146,43 @@ export default function PromptCard({
     }
   }
 
+  const handleShare = async () => {
+    const shareLink = `${window.location.origin}?prompt=${prompt._id}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: prompt.title,
+          text: prompt.description || 'Check out this prompt!',
+          url: shareLink,
+        });
+      } catch (error) {
+        console.error('Share failed:', error);
+        // Fallback to clipboard
+        await handleCopyLink(shareLink);
+      }
+    } else {
+      // Fallback for browsers without native sharing
+      await handleCopyLink(shareLink);
+    }
+  };
+
+  const handleCopyLink = async (link: string) => {
+    try {
+      await navigator.clipboard.writeText(link);
+      toast({
+        title: "Link Copied!",
+        description: "Share link copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy link",
+        variant: "destructive",
+      });
+    }
+  };
+
   const highlight = isSelected || tempSelectedPromptId === prompt._id;
 
   return (
@@ -185,8 +222,8 @@ export default function PromptCard({
                   <Eye className="mr-2 h-4 w-4" />
                   View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <ExternalLink className="mr-2 h-4 w-4" />
+                <DropdownMenuItem onClick={handleShare}>
+                  <Share className="mr-2 h-4 w-4" />
                   Share
                 </DropdownMenuItem>
                 <DropdownMenuItem>Report</DropdownMenuItem>

@@ -396,21 +396,21 @@ export default function EditPromptPage() {
       {/* Header */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-4 sm:py-6 gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
               <Button
                 variant="outline"
                 onClick={() => router.push("/")}
-                className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/20"
+                className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/20 h-10 px-3 sm:h-11 sm:px-4"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                <span className="hidden sm:inline">Back</span>
               </Button>
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
                   {isOwner ? "Edit Your Prompt" : "Edit Prompt"}: {prompt.title}
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
                   {isOwner 
                     ? "Edit and save your prompt" 
                     : "Temporary editing environment - copy or start chat with your edited version"
@@ -419,10 +419,10 @@ export default function EditPromptPage() {
               </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               {!isOwner && (
                 <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-                  <SelectTrigger className="w-48 border-green-200 dark:border-green-700">
+                  <SelectTrigger className="w-full sm:w-48 border-green-200 dark:border-green-700 text-xs sm:text-sm">
                     <SelectValue placeholder="Select AI Agent" />
                   </SelectTrigger>
                   <SelectContent>
@@ -435,37 +435,42 @@ export default function EditPromptPage() {
                 </Select>
               )}
               
-              {!isOwner && (
-                <Button
-                  onClick={handleStartChat}
-                  disabled={!selectedAgent}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Play className="h-4 w-4 mr-2" />
-                  Start Chat
-                </Button>
-              )}
-              
-              {isOwner && (
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? "Saving..." : "Save Changes"}
-                </Button>
-              )}
-              
-              {!isOwner && (
-                <Button
-                  onClick={handleCopy}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  Copy
-                </Button>
-              )}
+              <div className="flex gap-2 sm:gap-3">
+                {!isOwner && (
+                  <Button
+                    onClick={handleStartChat}
+                    disabled={!selectedAgent}
+                    className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none text-xs sm:text-sm h-10 sm:h-11"
+                  >
+                    <Play className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                    <span className="hidden sm:inline">Start Chat</span>
+                    <span className="sm:hidden">Chat</span>
+                  </Button>
+                )}
+                
+                {isOwner && (
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none text-xs sm:text-sm h-10 sm:h-11"
+                  >
+                    <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                    <span className="hidden sm:inline">{saving ? "Saving..." : "Save Changes"}</span>
+                    <span className="sm:hidden">{saving ? "Saving..." : "Save"}</span>
+                  </Button>
+                )}
+                
+                {!isOwner && (
+                  <Button
+                    onClick={handleCopy}
+                    className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none text-xs sm:text-sm h-10 sm:h-11"
+                  >
+                    <Send className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                    <span className="hidden sm:inline">Copy</span>
+                    <span className="sm:hidden">Copy</span>
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -474,7 +479,7 @@ export default function EditPromptPage() {
       {/* Toolbar */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 py-2">
+          <div className="flex items-center gap-1 sm:gap-2 py-2 overflow-x-auto">
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
@@ -510,7 +515,7 @@ export default function EditPromptPage() {
               </Button>
             </div>
             
-            <Separator orientation="vertical" className="h-6 bg-green-200 dark:bg-green-700" />
+            <Separator orientation="vertical" className="h-6 bg-green-200 dark:bg-green-700 flex-shrink-0" />
             
             <div className="flex items-center gap-1">
               <Button
@@ -547,7 +552,7 @@ export default function EditPromptPage() {
               </Button>
             </div>
             
-            <Separator orientation="vertical" className="h-6 bg-green-200 dark:bg-green-700" />
+            <Separator orientation="vertical" className="h-6 bg-green-200 dark:bg-green-700 flex-shrink-0" />
             
             <div className="flex items-center gap-1">
               <Button
@@ -616,12 +621,12 @@ export default function EditPromptPage() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* Main Content Editor - Takes 3/4 of space */}
             <div className="lg:col-span-3">
-              <Card className="min-h-[60vh] sm:min-h-[80vh] border-green-200 dark:border-green-700">
-                <CardHeader className="bg-green-50 dark:bg-green-900/20">
-                  <CardTitle className="text-green-800 dark:text-green-200 text-lg sm:text-xl">Edit Prompt Content</CardTitle>
+              <Card className="min-h-[50vh] sm:min-h-[60vh] lg:min-h-[80vh] border-green-200 dark:border-green-700">
+                <CardHeader className="bg-green-50 dark:bg-green-900/20 p-4 sm:p-6">
+                  <CardTitle className="text-green-800 dark:text-green-200 text-base sm:text-lg lg:text-xl">Edit Prompt Content</CardTitle>
                   <p className="text-xs sm:text-sm text-green-600 dark:text-green-400">Focus on editing your prompt content here</p>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-6">
                   <div className="prose prose-lg max-w-none relative">
                     <div
                       id="prompt-editor"
@@ -631,14 +636,14 @@ export default function EditPromptPage() {
                       onPaste={handleEditorPaste}
                       onFocus={handleEditorFocus}
                       onBlur={handleEditorBlur}
-                      className="w-full min-h-[50vh] sm:min-h-[70vh] p-3 sm:p-6 text-sm sm:text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono outline-none focus:ring-2 focus:ring-green-500/20"
+                      className="w-full min-h-[40vh] sm:min-h-[50vh] lg:min-h-[70vh] p-3 sm:p-6 text-xs sm:text-sm lg:text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono outline-none focus:ring-2 focus:ring-green-500/20"
                       style={{
                         fontSize: `${fontSize}px`,
                         fontFamily: fontFamily,
                       }}
                     />
                     {showPlaceholder && (
-                      <div className="absolute top-3 sm:top-6 left-3 sm:left-6 text-green-400 dark:text-green-500 pointer-events-none text-sm sm:text-base">
+                      <div className="absolute top-3 sm:top-6 left-3 sm:left-6 text-green-400 dark:text-green-500 pointer-events-none text-xs sm:text-sm lg:text-base">
                         <p>Start typing your prompt here...</p>
                       </div>
                     )}
@@ -648,7 +653,7 @@ export default function EditPromptPage() {
             </div>
 
             {/* Sidebar with other fields - Takes 1/4 of space */}
-            <div className="lg:col-span-1 space-y-4 sm:space-y-6">
+            <div className="lg:col-span-1 space-y-3 sm:space-y-4 lg:space-y-6">
               {/* Basic Info */}
               <Card>
                 <CardHeader>
@@ -783,41 +788,43 @@ export default function EditPromptPage() {
           // Non-owner editing - simple editor
           <div className="space-y-4 sm:space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">Edit Prompt</h1>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-2 truncate">Edit Prompt</h1>
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 dark:text-gray-400">
                   This is a temporary editing environment. Your changes won't be saved to the original prompt.
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
                 <Button
                   onClick={handleCopy}
                   variant="outline"
-                  className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/20"
+                  className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/20 text-xs sm:text-sm h-10 sm:h-11"
                 >
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy Edited
+                  <Copy className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Copy Edited</span>
+                  <span className="sm:hidden">Copy</span>
                 </Button>
                 <Button
                   onClick={handleStartChat}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm h-10 sm:h-11"
                 >
-                  <Send className="mr-2 h-4 w-4" />
-                  Start Chat
+                  <Send className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Start Chat</span>
+                  <span className="sm:hidden">Chat</span>
                 </Button>
               </div>
             </div>
 
-            <Card className="min-h-[60vh] sm:min-h-[80vh]">
-              <CardHeader>
+            <Card className="min-h-[50vh] sm:min-h-[60vh] lg:min-h-[80vh]">
+              <CardHeader className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-lg sm:text-xl">{prompt.title}</CardTitle>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className="text-base sm:text-lg lg:text-xl truncate">{prompt.title}</CardTitle>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1 truncate">
                       Created by {prompt.createdBy.name} • {new Date(prompt.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <Badge variant="secondary" className="text-xs">{prompt.category}</Badge>
                     {prompt.rating && (
                       <Badge variant="outline" className="text-xs">⭐ {prompt.rating.toFixed(1)}</Badge>
@@ -826,7 +833,7 @@ export default function EditPromptPage() {
                 </div>
               </CardHeader>
               
-              <CardContent>
+              <CardContent className="p-3 sm:p-6">
                 <div className="prose prose-lg max-w-none relative">
                   <div
                     id="prompt-editor"
@@ -836,7 +843,7 @@ export default function EditPromptPage() {
                     onPaste={handleEditorPaste}
                     onFocus={handleEditorFocus}
                     onBlur={handleEditorBlur}
-                    className="w-full min-h-[50vh] sm:min-h-[70vh] p-3 sm:p-6 text-sm sm:text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono outline-none"
+                    className="w-full min-h-[40vh] sm:min-h-[50vh] lg:min-h-[70vh] p-3 sm:p-6 text-xs sm:text-sm lg:text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono outline-none"
                     style={{
                       fontSize: `${fontSize}px`,
                       fontFamily: fontFamily,

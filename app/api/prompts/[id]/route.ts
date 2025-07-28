@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ message: "Prompt not found" }, { status: 404 })
     }
 
-    return NextResponse.json({ prompt })
+    return NextResponse.json(prompt)
   } catch (error) {
     console.error("Fetch prompt error:", error)
     return NextResponse.json({ message: "Internal server error" }, { status: 500 })
@@ -64,7 +64,7 @@ export async function PUT(
       { new: true, runValidators: true }
     ).populate("createdBy", "name email")
 
-    return NextResponse.json({ prompt })
+    return NextResponse.json(prompt)
   } catch (error) {
     console.error("Update prompt error:", error)
     return NextResponse.json({ message: "Internal server error" }, { status: 500 })
