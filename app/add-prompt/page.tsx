@@ -130,6 +130,10 @@ export default function AddPromptPage() {
       })
 
       if (response.ok) {
+        // Clear cache when new prompt is created
+        localStorage.removeItem('cachedPrompts')
+        localStorage.removeItem('cachedPromptsTime')
+        
         toast({
           title: "Success!",
           description: "Your prompt has been created",

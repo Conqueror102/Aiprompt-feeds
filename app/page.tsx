@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import PromptCard from "@/components/PromptCard"
+import PromptCardSkeleton from "@/components/PromptCardSkeleton"
 import PromptDetailModal from "@/components/PromptDetailModal"
 import PromptSidebar from "@/components/PromptSidebar"
 import AIAgentChat from "@/components/AIAgentChat"
@@ -93,11 +94,30 @@ export default function HomePage() {
   }, [sharedPrompt])
 
   const fetchPrompts = async () => {
+    // Check if we have cached data
+    const cached = localStorage.getItem('cachedPrompts')
+    const cacheTime = localStorage.getItem('cachedPromptsTime')
+    
+    // Check if cache is still fresh (5 minutes old)
+    const isCacheFresh = cacheTime && (Date.now() - parseInt(cacheTime) < 5 * 60 * 1000)
+    
+    if (cached && isCacheFresh) {
+      // Use cached data (instant loading)
+      setPrompts(JSON.parse(cached))
+      setLoading(false)
+      return
+    }
+
+    // Cache is old or doesn't exist, fetch fresh data
     try {
       const response = await fetch("/api/prompts")
       if (response.ok) {
         const data = await response.json()
         setPrompts(data.prompts)
+        
+        // Save to cache for next time
+        localStorage.setItem('cachedPrompts', JSON.stringify(data.prompts))
+        localStorage.setItem('cachedPromptsTime', Date.now().toString())
       }
     } catch (error) {
       console.error("Failed to fetch prompts:", error)
@@ -236,6 +256,32 @@ export default function HomePage() {
     })
   }
 
+  // Clear cache when prompts are updated
+  const clearPromptCache = () => {
+    localStorage.removeItem('cachedPrompts')
+    localStorage.removeItem('cachedPromptsTime')
+  }
+
+  // Scroll to prompts section
+  const scrollToPrompts = () => {
+    // Small delay to ensure AI Agent Collections is expanded
+    setTimeout(() => {
+      const promptsSection = document.getElementById('prompts-section')
+      if (promptsSection) {
+        promptsSection.scrollIntoView({ behavior: 'smooth' })
+      }
+    }, 100)
+  }
+
+  // Handle agent selection and scroll to prompts
+  const handleAgentSelect = (agent: string) => {
+    setSelectedAgentForFilter(agent)
+    // Small delay to ensure filter is applied before scrolling
+    setTimeout(() => {
+      scrollToPrompts()
+    }, 150)
+  }
+
   if (isDevMode) {
     return <DevModeInterface prompts={prompts} currentUserId={user?.id || undefined} onDeactivate={() => setIsDevMode(false)} />
   }
@@ -313,7 +359,7 @@ export default function HomePage() {
           {/* AI Agent Collections */}
           {showAIAgentCollections && (
             <div className="mb-6 sm:mb-8">
-              <AIAgentCollections onAgentSelect={setSelectedAgentForFilter} selectedAgent={selectedAgentForFilter} />
+              <AIAgentCollections onAgentSelect={handleAgentSelect} selectedAgent={selectedAgentForFilter} />
             </div>
           )}
 
@@ -365,31 +411,42 @@ export default function HomePage() {
           </div>
 
           {/* Prompts Grid */}
-          {filteredPrompts.length === 0 ? (
-            <div className="text-center py-8 sm:py-12">
-              <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg">
-                {prompts.length === 0 ? "No prompts found. Be the first to add one!" : "No prompts match your filters."}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {filteredPrompts.map((prompt) => (
-                <div key={prompt._id} id={`prompt-${prompt._id}`}>
-                  <PromptCard
-                    prompt={prompt}
-                    currentUserId={user?.id || undefined}
-                    isLiked={likedPromptIds.has(prompt._id)}
-                    isSaved={savedPromptIds.has(prompt._id)}
-                    onLike={handleLikePrompt}
-                    onSave={handleSavePrompt}
-                    onViewDetails={handleViewDetails}
-                    isSelected={selectedPromptId === prompt._id}
-                    tempSelectedPromptId={tempSelectedPromptId}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+          <div id="prompts-section">
+            {loading ? (
+              // Show skeleton loading while fetching prompts
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index}>
+                    <PromptCardSkeleton />
+                  </div>
+                ))}
+              </div>
+            ) : filteredPrompts.length === 0 ? (
+              <div className="text-center py-8 sm:py-12">
+                <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg">
+                  {prompts.length === 0 ? "No prompts found. Be the first to add one!" : "No prompts match your filters."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {filteredPrompts.map((prompt) => (
+                  <div key={prompt._id} id={`prompt-${prompt._id}`}>
+                    <PromptCard
+                      prompt={prompt}
+                      currentUserId={user?.id || undefined}
+                      isLiked={likedPromptIds.has(prompt._id)}
+                      isSaved={savedPromptIds.has(prompt._id)}
+                      onLike={handleLikePrompt}
+                      onSave={handleSavePrompt}
+                      onViewDetails={handleViewDetails}
+                      isSelected={selectedPromptId === prompt._id}
+                      tempSelectedPromptId={tempSelectedPromptId}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </main>
       </div>
 

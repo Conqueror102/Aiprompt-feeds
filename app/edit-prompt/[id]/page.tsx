@@ -196,6 +196,10 @@ export default function EditPromptPage() {
       })
 
       if (response.ok) {
+        // Clear cache when prompt is edited
+        localStorage.removeItem('cachedPrompts')
+        localStorage.removeItem('cachedPromptsTime')
+        
         toast({
           title: "Saved!",
           description: "Your prompt has been updated",
