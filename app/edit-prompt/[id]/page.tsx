@@ -140,18 +140,18 @@ export default function EditPromptPage() {
       const response = await fetch(`/api/prompts/${promptId}`)
       if (response.ok) {
         const data = await response.json()
-        setPrompt(data.prompt)
-        setEditedContent(data.prompt.content)
-        setSelectedAgent(data.prompt.aiAgents[0] || "")
+        setPrompt(data)
+        setEditedContent(data.content)
+        setSelectedAgent(data.aiAgents[0] || "")
         
         // Initialize form data for owners
         setFormData({
-          title: data.prompt.title,
-          description: data.prompt.description || "",
-          category: data.prompt.category,
-          aiAgents: data.prompt.aiAgents || [],
-          technologies: data.prompt.technologies || [],
-          tools: data.prompt.tools || [],
+          title: data.title,
+          description: data.description || "",
+          category: data.category,
+          aiAgents: data.aiAgents || [],
+          technologies: data.technologies || [],
+          tools: data.tools || [],
         })
       } else {
         toast({
