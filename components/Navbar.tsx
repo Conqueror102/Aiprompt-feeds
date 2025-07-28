@@ -14,6 +14,18 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useTheme } from "next-themes"
+import { useAuth } from "@/hooks/use-auth"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface NavbarProps {
   user?: {
@@ -28,16 +40,21 @@ interface NavbarProps {
 export default function Navbar({ user, onSidebarToggle, isSidebarOpen }: NavbarProps) {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const { logout } = useAuth()
   const [mounted, setMounted] = useState(false)
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem("token")
-    router.push("/")
-    router.refresh()
+    setShowLogoutDialog(true)
+  }
+
+  const confirmLogout = () => {
+    logout()
+    setShowLogoutDialog(false)
   }
 
   if (!mounted) return null
@@ -150,6 +167,24 @@ export default function Navbar({ user, onSidebarToggle, isSidebarOpen }: NavbarP
           </div>
         </div>
       </div>
+      
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will be logged out of your account. You'll need to sign in again to access your saved prompts and settings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmLogout} className="bg-red-600 hover:bg-red-700">
+              Yes, log me out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </nav>
   )
 }
