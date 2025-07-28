@@ -61,6 +61,8 @@ export default function HomePage() {
   const [isDevMode, setIsDevMode] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [showAIAgentCollections, setShowAIAgentCollections] = useState(false)
+  const [likedPromptIds, setLikedPromptIds] = useState<Set<string>>(new Set())
+  const [savedPromptIds, setSavedPromptIds] = useState<Set<string>>(new Set())
 
   // Share functionality
   const getPromptById = (id: string) => prompts.find(prompt => prompt._id === id)
@@ -69,6 +71,15 @@ export default function HomePage() {
   useEffect(() => {
     fetchPrompts()
   }, [])
+
+  useEffect(() => {
+    if (user) {
+      fetchUserPrompts()
+    } else {
+      setLikedPromptIds(new Set())
+      setSavedPromptIds(new Set())
+    }
+  }, [user])
 
   useEffect(() => {
     filterPrompts()
@@ -92,6 +103,39 @@ export default function HomePage() {
       console.error("Failed to fetch prompts:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchUserPrompts = async () => {
+    if (!user) return
+
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) return
+
+      // Fetch liked prompts
+      const likedResponse = await fetch("/api/user/liked-prompts", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (likedResponse.ok) {
+        const likedData = await likedResponse.json()
+        setLikedPromptIds(new Set(likedData.prompts.map((p: any) => p._id)))
+      }
+
+      // Fetch saved prompts
+      const savedResponse = await fetch("/api/user/saved-prompts", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (savedResponse.ok) {
+        const savedData = await savedResponse.json()
+        setSavedPromptIds(new Set(savedData.prompts.map((p: any) => p._id)))
+      }
+    } catch (error) {
+      console.error("Failed to fetch user prompts:", error)
     }
   }
 
@@ -166,6 +210,30 @@ export default function HomePage() {
   const handleCloseSharedDialog = () => {
     closeDialog()
     setSelectedPromptForModal(null)
+  }
+
+  const handleLikePrompt = (promptId: string) => {
+    setLikedPromptIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(promptId)) {
+        newSet.delete(promptId)
+      } else {
+        newSet.add(promptId)
+      }
+      return newSet
+    })
+  }
+
+  const handleSavePrompt = (promptId: string) => {
+    setSavedPromptIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(promptId)) {
+        newSet.delete(promptId)
+      } else {
+        newSet.add(promptId)
+      }
+      return newSet
+    })
   }
 
   if (isDevMode) {
@@ -310,6 +378,10 @@ export default function HomePage() {
                   <PromptCard
                     prompt={prompt}
                     currentUserId={user?.id || undefined}
+                    isLiked={likedPromptIds.has(prompt._id)}
+                    isSaved={savedPromptIds.has(prompt._id)}
+                    onLike={handleLikePrompt}
+                    onSave={handleSavePrompt}
                     onViewDetails={handleViewDetails}
                     isSelected={selectedPromptId === prompt._id}
                     tempSelectedPromptId={tempSelectedPromptId}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Heart, Bookmark, Copy, ExternalLink, MoreHorizontal, Eye, Star, Edit3, Share } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -52,6 +52,15 @@ export default function PromptCard({
   const [liked, setLiked] = useState(isLiked)
   const [saved, setSaved] = useState(isSaved)
   const [likesCount, setLikesCount] = useState(prompt.likes)
+
+  // Update local state when props change
+  useEffect(() => {
+    setLiked(isLiked)
+  }, [isLiked])
+
+  useEffect(() => {
+    setSaved(isSaved)
+  }, [isSaved])
 
   const isOwner = currentUserId === prompt.createdBy._id
 
