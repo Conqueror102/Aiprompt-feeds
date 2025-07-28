@@ -106,6 +106,12 @@ export default function Navbar({ user, onSidebarToggle, isSidebarOpen }: NavbarP
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
+                      <Link href="/explore" className="cursor-pointer">
+                        <BookmarkIcon className="mr-2 h-4 w-4" />
+                        Explore
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
                       <Link href="/profile" className="cursor-pointer">
                         <User className="mr-2 h-4 w-4" />
                         Profile

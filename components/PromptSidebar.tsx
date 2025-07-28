@@ -83,7 +83,11 @@ export default function PromptSidebar({
                     ? "bg-green-600 text-white hover:bg-green-700"
                     : "bg-white/70 dark:bg-gray-800/70 text-green-700 hover:bg-green-100 dark:hover:bg-green-900 border border-green-200 dark:border-green-800"
                 }`}
-                onClick={() => onCategoryFilter(selectedCategory === category ? "" : category)}
+                onClick={() => {
+                  onCategoryFilter(selectedCategory === category ? "" : category)
+                  // Close the category dropdown after selection
+                  setShowCategories(false)
+                }}
               >
                 {category}
               </Badge>

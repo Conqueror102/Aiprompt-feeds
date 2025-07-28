@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -167,7 +168,7 @@ export default function HomePage() {
         <div className={`fixed left-0 top-16 h-[calc(100vh-4rem)] z-40 transition-transform duration-300 ease-in-out ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
-          <div className="w-80 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-lg">
+          <div className="w-full sm:w-80 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-lg">
             <PromptSidebar
               prompts={prompts}
               onPromptSelect={handlePromptSelect}
@@ -183,7 +184,7 @@ export default function HomePage() {
         {/* Overlay for mobile */}
         {isSidebarOpen && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+            className="fixed inset-0 bg-black bg-opacity-50 z-30 sm:hidden"
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
@@ -208,8 +209,18 @@ export default function HomePage() {
               </div>
             </div>
             
-            {/* Dev Mode Toggle - Positioned on the right */}
-            <div className="flex justify-end mb-4">
+            {/* Dev Mode Toggle and Explore - Positioned on the right */}
+            <div className="flex justify-end gap-2 mb-4">
+              <Link href="/explore">
+                <Button variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                  <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M2 12h20"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                  </svg>
+                  <span className="hidden sm:inline">Explore</span>
+                </Button>
+              </Link>
               <DevModeToggle isDevMode={isDevMode} onToggle={setIsDevMode} />
             </div>
           </div>
