@@ -306,18 +306,16 @@ export default function PromptDetailModal({
                 <span className="hidden sm:inline">Share</span>
                 <span className="sm:hidden">Share</span>
               </Button>
-              
-              {isOwner && (
-                <Button 
-                  onClick={handleEditPrompt}
-                  variant="outline" 
-                  className="flex-1 bg-transparent text-xs sm:text-sm"
-                >
-                  <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                  <span className="hidden sm:inline">Edit Prompt</span>
-                  <span className="sm:hidden">Edit</span>
-                </Button>
-              )}
+
+              <Button
+                onClick={handleEditPrompt}
+                variant="outline"
+                className="flex-1 bg-transparent text-xs sm:text-sm"
+              >
+                <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                <span className="hidden sm:inline">{isOwner ? "Edit Prompt" : "Use & Edit"}</span>
+                <span className="sm:hidden">{isOwner ? "Edit" : "Use & Edit"}</span>
+              </Button>
             </div>
 
             <div className="flex-1 space-y-2">

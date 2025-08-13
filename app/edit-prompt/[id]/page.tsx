@@ -640,7 +640,7 @@ export default function EditPromptPage() {
                       onPaste={handleEditorPaste}
                       onFocus={handleEditorFocus}
                       onBlur={handleEditorBlur}
-                      className="w-full min-h-[40vh] sm:min-h-[50vh] lg:min-h-[70vh] p-3 sm:p-6 text-xs sm:text-sm lg:text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono outline-none focus:ring-2 focus:ring-green-500/20"
+                      className="w-full min-h-[40vh] sm:min-h-[50vh] lg:min-h-[70vh] p-3 sm:p-6 text-xs sm:text-sm lg:text-base leading-relaxed border-0 focus:outline-none resize-none font-mono outline-none focus:ring-2 focus:ring-green-500/20"
                       style={{
                         fontSize: `${fontSize}px`,
                         fontFamily: fontFamily,
@@ -808,14 +808,14 @@ export default function EditPromptPage() {
                   <span className="hidden sm:inline">Copy Edited</span>
                   <span className="sm:hidden">Copy</span>
                 </Button>
-                <Button
+                {/* <Button
                   onClick={handleStartChat}
                   className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm h-10 sm:h-11"
                 >
                   <Send className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Start Chat</span>
                   <span className="sm:hidden">Chat</span>
-                </Button>
+                </Button> */}
               </div>
             </div>
 

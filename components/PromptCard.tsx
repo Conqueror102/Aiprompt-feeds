@@ -235,13 +235,11 @@ export default function PromptCard({
                   <Share className="mr-2 h-4 w-4" />
                   Share
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleEdit}>
+                  <Edit3 className="mr-2 h-4 w-4" />
+                  {isOwner ? "Edit" : "Use & Edit"}
+                </DropdownMenuItem>
                 <DropdownMenuItem>Report</DropdownMenuItem>
-                {isOwner && (
-                  <DropdownMenuItem onClick={handleEdit}>
-                    <Edit3 className="mr-2 h-4 w-4" />
-                    Edit
-                  </DropdownMenuItem>
-                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
