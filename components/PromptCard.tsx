@@ -26,6 +26,7 @@ interface PromptCardProps {
     saves: number
     createdAt: string
     rating?: number
+    private?: boolean
   }
   isLiked?: boolean
   isSaved?: boolean
@@ -219,6 +220,11 @@ export default function PromptCard({
                   {prompt.rating.toFixed(1)}
                 </span>
               </div>
+            )}
+            {prompt.private && isOwner && (
+              <Badge variant="destructive" className="text-xs mr-2">
+                Private
+              </Badge>
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

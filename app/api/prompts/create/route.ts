@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "User not found" }, { status: 404 })
     }
 
-    const { title, content, description, category, aiAgents, technologies, tools } = await request.json()
+  const { title, content, description, category, aiAgents, technologies, tools, private: isPrivate } = await request.json()
 
     if (!title || !content || !category || !aiAgents || aiAgents.length === 0) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
       aiAgents,
       technologies: technologies || [],
       tools: tools || [],
+      private: !!isPrivate,
       createdBy: user._id,
     })
 

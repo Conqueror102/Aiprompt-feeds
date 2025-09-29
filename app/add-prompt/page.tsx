@@ -44,6 +44,7 @@ export default function AddPromptPage() {
     technologies: [] as string[],
     tools: [] as string[],
   })
+  const [isPrivate, setIsPrivate] = useState(false)
 
   useEffect(() => {
     fetchUser()
@@ -126,7 +127,7 @@ export default function AddPromptPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, private: isPrivate }),
       })
 
       if (response.ok) {
@@ -330,9 +331,20 @@ export default function AddPromptPage() {
                 <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading} className="bg-green-600 hover:bg-green-700 text-white">
-                  {loading ? "Creating..." : "Create Prompt"}
-                </Button>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={isPrivate}
+                      onChange={(e) => setIsPrivate(e.target.checked)}
+                      className="form-checkbox h-4 w-4"
+                    />
+                    <span className="text-sm">Make this prompt private</span>
+                  </label>
+                  <Button type="submit" disabled={loading} className="bg-green-600 hover:bg-green-700 text-white">
+                    {loading ? "Creating..." : "Create Prompt"}
+                  </Button>
+                </div>
               </div>
             </form>
           </CardContent>

@@ -54,6 +54,11 @@ const PromptSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // Whether the prompt is private (only visible to owner)
+    private: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

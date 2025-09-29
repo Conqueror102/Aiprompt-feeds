@@ -36,6 +36,7 @@ interface Prompt {
   likes: number
   saves: number
   rating?: number
+  private?: boolean
   createdAt: string
 }
 
@@ -94,13 +95,18 @@ export default function HomePage() {
   }, [sharedPrompt])
 
   const fetchPrompts = async () => {
-    // Check if we have cached data
+    // Check if we have cached data and that it was cached for the same auth state
+    const token = localStorage.getItem("token")
     const cached = localStorage.getItem('cachedPrompts')
     const cacheTime = localStorage.getItem('cachedPromptsTime')
-    
-    // Check if cache is still fresh (5 minutes old)
-    const isCacheFresh = cacheTime && (Date.now() - parseInt(cacheTime) < 5 * 60 * 1000)
-    
+    const cachedAuth = localStorage.getItem('cachedPromptsAuth') || 'anon'
+
+    // Normalize current auth to 'anon' or the token string
+    const currentAuth = token || 'anon'
+
+    // Cache is valid only if it is fresh (5 minutes) AND it was produced under the same auth state
+    const isCacheFresh = cacheTime && (Date.now() - parseInt(cacheTime) < 5 * 60 * 1000) && cachedAuth === currentAuth
+
     if (cached && isCacheFresh) {
       // Use cached data (instant loading)
       setPrompts(JSON.parse(cached))
@@ -110,14 +116,15 @@ export default function HomePage() {
 
     // Cache is old or doesn't exist, fetch fresh data
     try {
-      const response = await fetch("/api/prompts")
+      const response = await fetch("/api/prompts", token ? { headers: { Authorization: `Bearer ${token}` } } : undefined)
       if (response.ok) {
         const data = await response.json()
         setPrompts(data.prompts)
         
-        // Save to cache for next time
+        // Save to cache for next time and record which auth state produced the cache
         localStorage.setItem('cachedPrompts', JSON.stringify(data.prompts))
         localStorage.setItem('cachedPromptsTime', Date.now().toString())
+        localStorage.setItem('cachedPromptsAuth', currentAuth)
       }
     } catch (error) {
       console.error("Failed to fetch prompts:", error)
@@ -304,7 +311,7 @@ export default function HomePage() {
               prompts={prompts}
               onPromptSelect={handlePromptSelect}
               onCategoryFilter={setSelectedCategoryFilter}
-              selectedPromptId={selectedPromptId}
+              selectedPromptId={selectedPromptId ?? undefined}
               tempSelectedPromptId={tempSelectedPromptId}
               selectedCategory={selectedCategoryFilter}
               onClose={() => setIsSidebarOpen(false)}

@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import dbConnect from "@/lib/mongodb"
 import Prompt from "@/lib/models/Prompt"
+import User from "@/lib/models/User"
+import { verifyToken } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,13 +16,32 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Build filter
-    const filter: any = { isApproved: true }
+  // Build base filter
+  const filter: any = { isApproved: true }
     if (category && category !== "all") {
       filter.category = category
     }
     if (agent && agent !== "all") {
       filter.aiAgents = { $in: [agent] }
+    }
+
+    // Check for auth token to include private prompts for the owner
+    const authHeader = request.headers.get("authorization")
+    let userId: string | null = null
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.substring(7)
+      const decoded = verifyToken(token)
+      if (decoded) {
+        userId = decoded.userId
+      }
+    }
+
+    // Adjust filter to exclude private prompts unless owned by the requesting user
+    // We want prompts that are either public (private: false) OR private but createdBy the user
+    if (userId) {
+      filter.$or = [{ private: false }, { createdBy: userId }]
+    } else {
+      filter.private = false
     }
 
     const prompts = await Prompt.find(filter)

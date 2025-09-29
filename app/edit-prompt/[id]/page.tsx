@@ -26,6 +26,7 @@ import {
   RotateCcw,
   Copy
 } from "lucide-react"
+import { Lock, Unlock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -75,6 +76,7 @@ interface Prompt {
   saves: number
   rating?: number
   createdAt: string
+  private?: boolean
 }
 
 export default function EditPromptPage() {
@@ -101,6 +103,7 @@ export default function EditPromptPage() {
     aiAgents: [] as string[],
     technologies: [] as string[],
     tools: [] as string[],
+    private: false,
   })
 
   useEffect(() => {
@@ -137,7 +140,8 @@ export default function EditPromptPage() {
 
   const fetchPrompt = async () => {
     try {
-      const response = await fetch(`/api/prompts/${promptId}`)
+      const token = localStorage.getItem("token")
+      const response = await fetch(`/api/prompts/${promptId}`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined)
       if (response.ok) {
         const data = await response.json()
         setPrompt(data)
@@ -152,6 +156,7 @@ export default function EditPromptPage() {
           aiAgents: data.aiAgents || [],
           technologies: data.technologies || [],
           tools: data.tools || [],
+          private: !!data.private,
         })
       } else {
         toast({
@@ -178,6 +183,16 @@ export default function EditPromptPage() {
     
     setSaving(true)
     try {
+      // Confirm if changing visibility from private -> public or public -> private
+      if (typeof formData.private === 'boolean' && formData.private !== !!prompt.private) {
+        const changingTo = formData.private ? 'private' : 'public'
+        const confirmed = window.confirm(`Are you sure you want to make this prompt ${changingTo}?`)
+        if (!confirmed) {
+          setSaving(false)
+          return
+        }
+      }
+
       const response = await fetch(`/api/prompts/${promptId}`, {
         method: "PUT",
         headers: {
@@ -192,6 +207,7 @@ export default function EditPromptPage() {
           aiAgents: formData.aiAgents,
           technologies: formData.technologies,
           tools: formData.tools,
+          private: formData.private,
         }),
       })
 
@@ -413,6 +429,11 @@ export default function EditPromptPage() {
               <div className="min-w-0 flex-1">
                 <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
                   {isOwner ? "Edit Your Prompt" : "Edit Prompt"}: {prompt.title}
+                  {prompt.private && (
+                    <span title="Private prompt" className="ml-2 inline-flex items-center text-yellow-600">
+                      <Lock className="h-4 w-4" />
+                    </span>
+                  )}
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
                   {isOwner 
@@ -453,15 +474,29 @@ export default function EditPromptPage() {
                 )}
                 
                 {isOwner && (
-                  <Button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none text-xs sm:text-sm h-10 sm:h-11"
-                  >
-                    <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                    <span className="hidden sm:inline">{saving ? "Saving..." : "Save Changes"}</span>
-                    <span className="sm:hidden">{saving ? "Saving..." : "Save"}</span>
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={!!formData.private}
+                        onChange={(e) => setFormData(prev => ({ ...prev, private: e.target.checked }))}
+                        className="form-checkbox h-4 w-4"
+                      />
+                      <span className="text-sm hidden sm:inline">Private</span>
+                      <span className="inline sm:hidden">
+                        {formData.private ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                      </span>
+                    </label>
+                    <Button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none text-xs sm:text-sm h-10 sm:h-11"
+                    >
+                      <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                      <span className="hidden sm:inline">{saving ? "Saving..." : "Save Changes"}</span>
+                      <span className="sm:hidden">{saving ? "Saving..." : "Save"}</span>
+                    </Button>
+                  </div>
                 )}
                 
                 {!isOwner && (
