@@ -1,8 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Heart, Bookmark, Copy, ExternalLink, MoreHorizontal, Eye, Star, Edit3, Share } from "lucide-react"
+import { Heart, Bookmark, Copy, ExternalLink, MoreHorizontal, Eye, Star, Edit3, Share, Wrench } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { AI_AGENTS } from "@/lib/constants"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -27,6 +30,8 @@ interface PromptCardProps {
     createdAt: string
     rating?: number
     private?: boolean
+    tools?: string[]
+    technologies?: string[]
   }
   isLiked?: boolean
   isSaved?: boolean
@@ -53,6 +58,29 @@ export default function PromptCard({
   const [liked, setLiked] = useState(isLiked)
   const [saved, setSaved] = useState(isSaved)
   const [likesCount, setLikesCount] = useState(prompt.likes)
+  const [selectedAgent, setSelectedAgent] = useState<string>("none")
+  const [isRunModalOpen, setIsRunModalOpen] = useState(false)
+
+  const handleRun = () => {
+    setIsRunModalOpen(true)
+  }
+
+  const handleConfirmRun = () => {
+    if (selectedAgent === "none") return
+    import("@/lib/launch-agent").then(({ launchExternalAgent }) => {
+      launchExternalAgent(selectedAgent, prompt.content)
+      setIsRunModalOpen(false)
+    })
+  }
+
+  const handleToolClick = async (tool: string) => {
+    try {
+      await navigator.clipboard.writeText(tool)
+      toast({ title: "Tool copied", description: tool })
+    } catch {}
+    const q = encodeURIComponent(`${tool} documentation`)
+    window.open(`https://www.google.com/search?q=${q}`, "_blank", "noopener,noreferrer")
+  }
 
   // Update local state when props change
   useEffect(() => {
@@ -226,6 +254,42 @@ export default function PromptCard({
                 Private
               </Badge>
             )}
+            {/* Debug: Show wrench for all Development prompts, then we'll add tools condition */}
+            {prompt.category === "Development" && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" aria-label="Recommended Tools">
+                    <Wrench className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {Array.isArray(prompt.tools) && prompt.tools.length > 0 && (
+                    <>
+                      <DropdownMenuItem disabled className="text-xs font-semibold text-gray-500">Tools</DropdownMenuItem>
+                      {prompt.tools.map((tool) => (
+                        <DropdownMenuItem key={tool} onClick={() => handleToolClick(tool)}>
+                          {tool}
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
+                  {Array.isArray(prompt.technologies) && prompt.technologies.length > 0 && (
+                    <>
+                      <DropdownMenuItem disabled className="text-xs font-semibold text-gray-500">Technologies</DropdownMenuItem>
+                      {prompt.technologies.map((tech) => (
+                        <DropdownMenuItem key={tech} onClick={() => handleToolClick(tech)}>
+                          {tech}
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
+                  {(!Array.isArray(prompt.tools) || prompt.tools.length === 0) && 
+                   (!Array.isArray(prompt.technologies) || prompt.technologies.length === 0) && (
+                    <DropdownMenuItem disabled>No tools or technologies specified</DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm">
@@ -275,7 +339,7 @@ export default function PromptCard({
       </CardContent>
 
       <CardFooter className="pt-0">
-        <div className="flex items-center justify-between w-full">
+        <div className="flex items-center justify-between w-full gap-2">
           <div className="flex items-center space-x-1">
             <Button
               variant="ghost"
@@ -302,16 +366,66 @@ export default function PromptCard({
             </Button>
           </div>
 
-          <Button
-            onClick={handleCopy}
-            size="sm"
-            className="bg-green-600 hover:bg-green-700 text-white hover:scale-105 transition-transform text-xs"
-          >
-            <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Copy</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleCopy}
+              size="sm"
+              variant="outline"
+              className="hover:scale-105 transition-transform text-xs"
+            >
+              <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Copy</span>
+            </Button>
+
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white h-8"
+              onClick={handleRun}
+            >
+              <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+              Run
+            </Button>
+            
+          </div>
         </div>
       </CardFooter>
+
+      <Dialog open={isRunModalOpen} onOpenChange={setIsRunModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Run with AI</DialogTitle>
+            <DialogDescription>Select an AI agent to run this prompt with.</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-3">
+            <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select AI" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Select AI</SelectItem>
+                {AI_AGENTS.map((agent) => (
+                  <SelectItem key={agent} value={agent}>
+                    {agent}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsRunModalOpen(false)}>Cancel</Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+                disabled={selectedAgent === "none"}
+                onClick={handleConfirmRun}
+              >
+                Run
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </Card>
   )
 }

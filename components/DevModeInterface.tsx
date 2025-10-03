@@ -18,6 +18,13 @@ interface DevModeInterfaceProps {
 }
 
 export default function DevModeInterface({ prompts, currentUserId, onDeactivate }: DevModeInterfaceProps) {
+  
+  const launchAgent = (agent: string, prompt: string) => {
+    // Lazy import to avoid SSR issues
+    import("@/lib/launch-agent").then(({ launchExternalAgent }) => {
+      launchExternalAgent(agent, prompt)
+    })
+  }
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTech, setSelectedTech] = useState<string>("")
   const [filteredPrompts, setFilteredPrompts] = useState(prompts)
@@ -360,7 +367,7 @@ export default function DevModeInterface({ prompts, currentUserId, onDeactivate 
                   </Select>
                   
                   <Button 
-                    onClick={() => selectedAgent !== "none" && handleOpenChat(selectedAgent, selectedPrompt.content)}
+                    onClick={() => selectedAgent !== "none" && launchAgent(selectedAgent, selectedPrompt.content)}
                     disabled={selectedAgent === "none"}
                     className="bg-green-600 hover:bg-green-700 text-white"
                   >

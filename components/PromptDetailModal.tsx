@@ -27,6 +27,8 @@ interface PromptDetailModalProps {
     saves: number
     createdAt: string
     rating?: number
+    tools?: string[]
+    technologies?: string[]
   } | null
   isOpen: boolean
   onClose: () => void
@@ -243,16 +245,46 @@ export default function PromptDetailModal({
           </div>
 
           {/* Tags */}
-          <div className="flex flex-wrap gap-1 sm:gap-2">
-            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">
-              <Tag className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
-              {prompt.category}
-            </Badge>
-            {prompt.aiAgents.map((agent) => (
-              <Badge key={agent} variant="outline" className="text-xs">
-                {agent}
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-1 sm:gap-2">
+              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">
+                <Tag className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                {prompt.category}
               </Badge>
-            ))}
+              {prompt.aiAgents.map((agent) => (
+                <Badge key={agent} variant="outline" className="text-xs">
+                  {agent}
+                </Badge>
+              ))}
+            </div>
+            
+            {/* Tools */}
+            {Array.isArray(prompt.tools) && prompt.tools.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tools</h4>
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  {prompt.tools.map((tool) => (
+                    <Badge key={tool} variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs">
+                      {tool}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Technologies */}
+            {Array.isArray(prompt.technologies) && prompt.technologies.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Technologies</h4>
+                <div className="flex flex-wrap gap-1 sm:gap-2">
+                  {prompt.technologies.map((tech) => (
+                    <Badge key={tech} variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-xs">
+                      {tech}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Prompt Content */}

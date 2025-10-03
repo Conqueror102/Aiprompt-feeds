@@ -44,6 +44,7 @@ export default function AddPromptPage() {
     technologies: [] as string[],
     tools: [] as string[],
   })
+  const [toolsInput, setToolsInput] = useState("")
   const [isPrivate, setIsPrivate] = useState(false)
 
   useEffect(() => {
@@ -100,9 +101,17 @@ export default function AddPromptPage() {
   }
 
   const handleToolsChange = (value: string) => {
+    setToolsInput(value)
     setFormData((prev) => ({
       ...prev,
       tools: value.split(",").map((t) => t.trim()).filter(Boolean),
+    }))
+  }
+
+  const handleTechnologiesChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      technologies: value.split(",").map((t) => t.trim()).filter(Boolean),
     }))
   }
 
@@ -275,7 +284,7 @@ export default function AddPromptPage() {
                     <Input
                       id="tools"
                       placeholder="e.g. VSCode, Postman, Docker"
-                      value={formData.tools.join(", ")}
+                      value={toolsInput}
                       onChange={(e) => handleToolsChange(e.target.value)}
                       className="mt-1"
                     />

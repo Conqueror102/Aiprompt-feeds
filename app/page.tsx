@@ -12,14 +12,13 @@ import PromptCardSkeleton from "@/components/PromptCardSkeleton"
 import PromptDetailModal from "@/components/PromptDetailModal"
 import PromptSidebar from "@/components/PromptSidebar"
 import AIAgentChat from "@/components/AIAgentChat"
-import DevModeToggle from "@/components/DevModeToggle"
-import DevModeInterface from "@/components/DevModeInterface"
 import AIAgentCollections from "@/components/AIAgentCollections"
 import Footer from "@/components/Footer"
 import Navbar from "@/components/Navbar"
 import { useAuth } from "@/hooks/use-auth"
 import { useOpenSharedDialog } from "@/hooks/useOpenSharedDialog"
 import { AI_AGENTS, CATEGORIES } from "@/lib/constants"
+import { launchExternalAgent } from "@/lib/launch-agent"
 import { Search } from "lucide-react"
 
 interface Prompt {
@@ -37,6 +36,8 @@ interface Prompt {
   saves: number
   rating?: number
   private?: boolean
+  tools?: string[]
+  technologies?: string[]
   createdAt: string
 }
 
@@ -60,7 +61,6 @@ export default function HomePage() {
   const [chatAgent, setChatAgent] = useState<{ agent: string; prompt: string } | null>(null)
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
   const [tempSelectedPromptId, setTempSelectedPromptId] = useState<string | null>(null)
-  const [isDevMode, setIsDevMode] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [showAIAgentCollections, setShowAIAgentCollections] = useState(false)
   const [likedPromptIds, setLikedPromptIds] = useState<Set<string>>(new Set())
@@ -205,7 +205,7 @@ export default function HomePage() {
   }
 
   const handleOpenChat = (agent: string, prompt: string) => {
-    setChatAgent({ agent, prompt })
+    launchExternalAgent(agent, prompt)
     setSelectedPromptForModal(null)
   }
 
@@ -289,9 +289,6 @@ export default function HomePage() {
     }, 150)
   }
 
-  if (isDevMode) {
-    return <DevModeInterface prompts={prompts} currentUserId={user?.id || undefined} onDeactivate={() => setIsDevMode(false)} />
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -359,7 +356,6 @@ export default function HomePage() {
                   <span className="hidden sm:inline">Explore</span>
                 </Button>
               </Link>
-              <DevModeToggle isDevMode={isDevMode} onToggle={setIsDevMode} />
             </div>
           </div>
 
@@ -467,9 +463,6 @@ export default function HomePage() {
         onRated={handlePromptRated}
       />
 
-      {chatAgent && (
-        <AIAgentChat agentName={chatAgent.agent} initialPrompt={chatAgent.prompt} onClose={() => setChatAgent(null)} />
-      )}
 
       <Footer />
     </div>

@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import mongoose from "mongoose"
 import dbConnect from "@/lib/mongodb"
 import Prompt from "@/lib/models/Prompt"
 import User from "@/lib/models/User"
@@ -17,7 +18,12 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
   // Build base filter
-  const filter: any = { isApproved: true }
+  // Include legacy docs where isApproved/private may be missing
+  const filter: any = {
+    $and: [
+      { $or: [{ isApproved: true }, { isApproved: { $exists: false } }] },
+    ],
+  }
     if (category && category !== "all") {
       filter.category = category
     }
@@ -37,11 +43,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Adjust filter to exclude private prompts unless owned by the requesting user
-    // We want prompts that are either public (private: false) OR private but createdBy the user
+    // Public prompts: private is false OR missing
     if (userId) {
-      filter.$or = [{ private: false }, { createdBy: userId }]
+      filter.$and.push({
+        $or: [
+          { private: false },
+          { private: { $exists: false } },
+          { createdBy: new mongoose.Types.ObjectId(userId) },
+        ],
+      })
     } else {
-      filter.private = false
+      filter.$and.push({
+        $or: [
+          { private: false },
+          { private: { $exists: false } },
+        ],
+      })
     }
 
     const prompts = await Prompt.find(filter)
