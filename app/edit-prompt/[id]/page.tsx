@@ -94,6 +94,7 @@ export default function EditPromptPage() {
   const [isOwner, setIsOwner] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showPlaceholder, setShowPlaceholder] = useState(true)
+  const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set())
   
   // Form data for owners
   const [formData, setFormData] = useState({
@@ -145,7 +146,9 @@ export default function EditPromptPage() {
       if (response.ok) {
         const data = await response.json()
         setPrompt(data)
-        setEditedContent(data.content)
+        // Convert plain text to HTML with proper line breaks to prevent overlap
+        const htmlContent = data.content.replace(/\n/g, '<br>')
+        setEditedContent(htmlContent)
         setSelectedAgent(data.aiAgents[0] || "")
         
         // Initialize form data for owners
@@ -308,36 +311,64 @@ export default function EditPromptPage() {
     // Focus the editor first
     editor.focus()
     
-    // Handle special cases
-    switch (command) {
-      case "list":
-        document.execCommand('insertUnorderedList', false, undefined as any)
-        break
-      case "ordered-list":
-        document.execCommand('insertOrderedList', false, undefined as any)
-        break
-      case "quote":
-        // Create a blockquote
-        const selection = window.getSelection()
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0)
-          const blockquote = document.createElement('blockquote')
-          blockquote.style.borderLeft = '4px solid #ccc'
-          blockquote.style.paddingLeft = '1rem'
-          blockquote.style.margin = '1rem 0'
-          range.surroundContents(blockquote)
-        }
-        break
-      case "code":
-        document.execCommand('formatBlock', false, 'pre')
-        break
-      default:
-        // Execute the command
-        document.execCommand(command, false, undefined as any)
+    try {
+      // Handle special cases
+      switch (command) {
+        case "list":
+          // Toggle bullet list (like MS Word)
+          document.execCommand('insertUnorderedList', false)
+          break
+        case "ordered-list":
+          // Toggle numbered list (like MS Word)
+          document.execCommand('insertOrderedList', false)
+          break
+        case "quote":
+          // Create a blockquote
+          const selection = window.getSelection()
+          if (selection && selection.rangeCount > 0) {
+            try {
+              const range = selection.getRangeAt(0)
+              const blockquote = document.createElement('blockquote')
+              blockquote.style.borderLeft = '4px solid #ccc'
+              blockquote.style.paddingLeft = '1rem'
+              blockquote.style.margin = '1rem 0'
+              range.surroundContents(blockquote)
+            } catch (e) {
+              // If surroundContents fails, use formatBlock
+              document.execCommand('formatBlock', false, 'blockquote')
+            }
+          }
+          break
+        case "code":
+          document.execCommand('formatBlock', false, 'pre')
+          break
+        default:
+          // Execute the command (bold, italic, underline, etc. auto-toggle)
+          document.execCommand(command, false)
+      }
+      
+      // Update active formats
+      updateActiveFormats()
+    } catch (error) {
+      console.error('Format command failed:', error)
     }
     
     // Update the state with the new content
     setEditedContent(editor.innerHTML)
+  }
+
+  const updateActiveFormats = () => {
+    const formats = new Set<string>()
+    
+    // Check which formats are currently active
+    if (document.queryCommandState('bold')) formats.add('bold')
+    if (document.queryCommandState('italic')) formats.add('italic')
+    if (document.queryCommandState('underline')) formats.add('underline')
+    if (document.queryCommandState('strikeThrough')) formats.add('strikethrough')
+    if (document.queryCommandState('insertUnorderedList')) formats.add('list')
+    if (document.queryCommandState('insertOrderedList')) formats.add('ordered-list')
+    
+    setActiveFormats(formats)
   }
 
   const handleUndo = () => {
@@ -365,12 +396,14 @@ export default function EditPromptPage() {
     editor.focus()
     document.execCommand('justify' + align, false, undefined as any)
     setEditedContent(editor.innerHTML)
+    updateActiveFormats()
   }
 
   const handleEditorChange = (e: React.FormEvent<HTMLDivElement>) => {
     const content = e.currentTarget.innerHTML
     setEditedContent(content)
     setShowPlaceholder(content === '' || content === '<br>' || content === '<div><br></div>')
+    updateActiveFormats()
   }
 
   const handleEditorPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -524,7 +557,7 @@ export default function EditPromptPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => formatText("bold")}
-                className="h-8 w-8 p-0 text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20"
+                className={`h-8 w-8 p-0 ${activeFormats.has('bold') ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'text-gray-600 hover:text-green-600 hover:bg-green-50 dark:text-gray-400 dark:hover:text-green-400 dark:hover:bg-green-900/20'}`}
               >
                 <Bold className="h-4 w-4" />
               </Button>
@@ -675,7 +708,7 @@ export default function EditPromptPage() {
                       onPaste={handleEditorPaste}
                       onFocus={handleEditorFocus}
                       onBlur={handleEditorBlur}
-                      className="w-full min-h-[40vh] sm:min-h-[50vh] lg:min-h-[70vh] p-3 sm:p-6 text-xs sm:text-sm lg:text-base leading-relaxed border-0 focus:outline-none resize-none font-mono outline-none focus:ring-2 focus:ring-green-500/20"
+                      className="w-full min-h-[40vh] sm:min-h-[50vh] lg:min-h-[70vh] p-3 sm:p-6 text-xs sm:text-sm lg:text-base leading-relaxed border-0 focus:outline-none resize-none font-mono outline-none focus:ring-2 focus:ring-green-500/20 whitespace-pre-wrap overflow-auto break-words"
                       style={{
                         fontSize: `${fontSize}px`,
                         fontFamily: fontFamily,
@@ -882,7 +915,7 @@ export default function EditPromptPage() {
                     onPaste={handleEditorPaste}
                     onFocus={handleEditorFocus}
                     onBlur={handleEditorBlur}
-                    className="w-full min-h-[40vh] sm:min-h-[50vh] lg:min-h-[70vh] p-3 sm:p-6 text-xs sm:text-sm lg:text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono outline-none"
+                    className="w-full min-h-[40vh] sm:min-h-[50vh] lg:min-h-[70vh] p-3 sm:p-6 text-xs sm:text-sm lg:text-base leading-relaxed border-0 focus:outline-none focus:ring-0 resize-none font-mono outline-none whitespace-pre-wrap overflow-auto break-words"
                     style={{
                       fontSize: `${fontSize}px`,
                       fontFamily: fontFamily,

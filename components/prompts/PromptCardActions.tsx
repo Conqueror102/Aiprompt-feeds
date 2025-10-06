@@ -1,0 +1,73 @@
+// Component for prompt card action buttons
+import { Heart, Bookmark, Copy, ExternalLink } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+
+interface PromptCardActionsProps {
+  liked: boolean
+  saved: boolean
+  likesCount: number
+  onLike: () => void
+  onSave: () => void
+  onCopy: () => void
+  onRun: () => void
+}
+
+export default function PromptCardActions({
+  liked,
+  saved,
+  likesCount,
+  onLike,
+  onSave,
+  onCopy,
+  onRun,
+}: PromptCardActionsProps) {
+  return (
+    <div className="flex items-center justify-between w-full gap-2">
+      <div className="flex items-center space-x-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onLike}
+          className={`hover:scale-105 transition-transform ${
+            liked ? 'text-red-500 hover:text-red-600' : 'text-gray-500 hover:text-red-500'
+          }`}
+        >
+          <Heart className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 ${liked ? 'fill-current' : ''}`} />
+          <span className="text-xs sm:text-sm">{likesCount}</span>
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onSave}
+          className={`hover:scale-105 transition-transform ${
+            saved ? 'text-blue-500 hover:text-blue-600' : 'text-gray-500 hover:text-blue-500'
+          }`}
+        >
+          <Bookmark className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 ${saved ? 'fill-current' : ''}`} />
+          <span className="hidden sm:inline">Save</span>
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button
+          onClick={onCopy}
+          size="sm"
+          variant="outline"
+          className="hover:scale-105 hover:border-green-500 transition-all"
+        >
+          <Copy className="h-4 w-4" />
+        </Button>
+
+        <Button
+          size="sm"
+          variant="outline"
+          className="hover:scale-105 hover:border-green-500 transition-all"
+          onClick={onRun}
+        >
+          <ExternalLink className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  )
+}

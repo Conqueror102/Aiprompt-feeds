@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { UserIcon, Calendar, Bookmark, Edit, X } from "lucide-react"
+import { UserIcon, Calendar, Bookmark, Edit, X, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -20,6 +20,10 @@ interface User {
   email: string
   role: string
   createdAt: string
+  followers?: number
+  following?: number
+  bio?: string
+  avatar?: string
 }
 
 interface Prompt {
@@ -38,11 +42,21 @@ interface Prompt {
   createdAt: string
 }
 
+interface Follower {
+  _id: string
+  name: string
+  email: string
+  avatar?: string
+  bio?: string
+}
+
 export default function ProfilePage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [userPrompts, setUserPrompts] = useState<Prompt[]>([])
   const [savedPrompts, setSavedPrompts] = useState<Prompt[]>([])
+  const [followers, setFollowers] = useState<Follower[]>([])
+  const [following, setFollowing] = useState<Follower[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("posted")
   const [showEditModal, setShowEditModal] = useState(false)
@@ -105,6 +119,30 @@ export default function ProfilePage() {
       if (savedResponse.ok) {
         const savedData = await savedResponse.json()
         setSavedPrompts(savedData.prompts)
+      }
+
+      // Fetch followers
+      const followersResponse = await fetch(`/api/user/${userData.id}/followers`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (followersResponse.ok) {
+        const followersData = await followersResponse.json()
+        setFollowers(followersData.users)
+      }
+
+      // Fetch following
+      const followingResponse = await fetch(`/api/user/${userData.id}/following`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (followingResponse.ok) {
+        const followingData = await followingResponse.json()
+        setFollowing(followingData.users)
       }
     } catch (error) {
       console.error("Failed to fetch user data:", error)
@@ -218,7 +256,7 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-3 gap-6 mt-6">
+                <div className="grid grid-cols-5 gap-4 mt-6">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">{userPrompts.length}</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">Prompts</div>
@@ -231,6 +269,14 @@ export default function ProfilePage() {
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">{savedPrompts.length}</div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">Saved</div>
                   </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.followers || 0}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Followers</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{user.following || 0}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Following</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -239,7 +285,7 @@ export default function ProfilePage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsList className="grid w-full grid-cols-4 max-w-3xl">
             <TabsTrigger value="posted" className="flex items-center gap-2">
               <UserIcon className="h-4 w-4" />
               Posted ({userPrompts.length})
@@ -247,6 +293,14 @@ export default function ProfilePage() {
             <TabsTrigger value="saved" className="flex items-center gap-2">
               <Bookmark className="h-4 w-4" />
               Saved ({savedPrompts.length})
+            </TabsTrigger>
+            <TabsTrigger value="followers" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Followers ({followers.length})
+            </TabsTrigger>
+            <TabsTrigger value="following" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Following ({following.length})
             </TabsTrigger>
           </TabsList>
 
@@ -299,6 +353,108 @@ export default function ProfilePage() {
                       setSavedPrompts((prev) => prev.filter((p) => p._id !== prompt._id))
                     }}
                   />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="followers" className="mt-6">
+            {followers.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No followers yet</h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Share your prompts to attract followers!
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {followers.map((follower) => (
+                  <Card key={follower._id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback className="bg-green-100 text-green-600">
+                            {follower.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                            {follower.name}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                            {follower.email}
+                          </p>
+                          {follower.bio && (
+                            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2 line-clamp-2">
+                              {follower.bio}
+                            </p>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-3 w-full"
+                            onClick={() => router.push(`/user/${follower._id}`)}
+                          >
+                            View Profile
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="following" className="mt-6">
+            {following.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Not following anyone yet</h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Discover and follow other creators in the community!
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {following.map((user) => (
+                  <Card key={user._id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback className="bg-blue-100 text-blue-600">
+                            {user.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                            {user.name}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                            {user.email}
+                          </p>
+                          {user.bio && (
+                            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2 line-clamp-2">
+                              {user.bio}
+                            </p>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-3 w-full"
+                            onClick={() => router.push(`/user/${user._id}`)}
+                          >
+                            View Profile
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}

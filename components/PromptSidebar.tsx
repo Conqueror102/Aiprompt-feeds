@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Search, Filter, X, ChevronDown, ChevronUp } from "lucide-react"
+import { useState, useMemo } from "react"
+import { Search, X, ChevronDown, ChevronRight } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { CATEGORIES } from "@/lib/constants"
 
@@ -37,22 +36,55 @@ export default function PromptSidebar({
   onClose,
 }: PromptSidebarProps) {
   const [searchTerm, setSearchTerm] = useState("")
-  const [filteredPrompts, setFilteredPrompts] = useState<Prompt[]>(prompts)
-  const [showCategories, setShowCategories] = useState(false)
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
 
-  useEffect(() => {
-    let filtered = prompts
-    if (searchTerm) {
-      filtered = filtered.filter((prompt) => prompt.title.toLowerCase().includes(searchTerm.toLowerCase()))
-    }
-    setFilteredPrompts(filtered)
-  }, [prompts, searchTerm])
+  // Group prompts by category
+  const promptsByCategory = useMemo(() => {
+    const grouped: Record<string, Prompt[]> = {}
+    
+    prompts.forEach((prompt) => {
+      if (!grouped[prompt.category]) {
+        grouped[prompt.category] = []
+      }
+      grouped[prompt.category].push(prompt)
+    })
+    
+    return grouped
+  }, [prompts])
+
+  // Filter categories and prompts based on search
+  const filteredCategories = useMemo(() => {
+    if (!searchTerm) return promptsByCategory
+
+    const filtered: Record<string, Prompt[]> = {}
+    Object.entries(promptsByCategory).forEach(([category, categoryPrompts]) => {
+      const matchingPrompts = categoryPrompts.filter((prompt) =>
+        prompt.title.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      if (matchingPrompts.length > 0) {
+        filtered[category] = matchingPrompts
+      }
+    })
+    return filtered
+  }, [promptsByCategory, searchTerm])
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(category)) {
+        newSet.delete(category)
+      } else {
+        newSet.add(category)
+      }
+      return newSet
+    })
+  }
 
   return (
-    <aside className="w-full h-full flex flex-col">
+    <aside className="w-full h-full flex flex-col bg-white dark:bg-gray-900">
       {/* Header with close button */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Prompts</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Categories</h2>
         {onClose && (
           <button
             onClick={onClose}
@@ -63,47 +95,12 @@ export default function PromptSidebar({
         )}
       </div>
 
-      {/* Toggle Category Filter */}
-           {/* Toggle Category Filter */}
-      <div className="p-4 flex flex-col gap-4 bg-white/80 dark:bg-gray-900/80">
-        <button
-          className="w-full py-2 px-4 rounded-full bg-white/60 dark:bg-gray-800/60 shadow backdrop-blur font-semibold flex items-center justify-center gap-2 hover:bg-green-100 dark:hover:bg-green-900 transition-colors border border-green-100 dark:border-green-900"
-          onClick={() => setShowCategories((prev) => !prev)}
-        >
-          {showCategories ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          {showCategories ? "Hide Categories" : "Show Categories"}
-        </button>
-        {showCategories && (
-          <div className="flex flex-wrap overflow-scroll  gap-2 ">
-            {CATEGORIES.map((category) => (
-              <Badge
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                className={`rounded-full px-4 py-1 text-xs font-medium shadow-sm transition-all duration-150 cursor-pointer ${
-                  selectedCategory === category
-                    ? "bg-green-600 text-white hover:bg-green-700"
-                    : "bg-white/70 dark:bg-gray-800/70 text-green-700 hover:bg-green-100 dark:hover:bg-green-900 border border-green-200 dark:border-green-800"
-                }`}
-                onClick={() => {
-                  onCategoryFilter(selectedCategory === category ? "" : category)
-                  // Close the category dropdown after selection
-                  setShowCategories(false)
-                }}
-              >
-                {category}
-              </Badge>
-            ))}
-          </div>
-        )}
-      </div>
-
-
-      {/* Search Input - Mobile Only */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-800 sm:hidden">
+      {/* Search Input */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-800">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
-            placeholder="Search prompts by title..."
+            placeholder="Search prompts..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -111,39 +108,73 @@ export default function PromptSidebar({
         </div>
       </div>
 
-    
-      {/* Prompt Titles List */}
-      <ScrollArea className="flex-1 px-4">
-        <div className="space-y-3 pb-4">
-          {filteredPrompts.length === 0 ? (
+      {/* Categories with Dropdown Prompts */}
+      <ScrollArea className="flex-1">
+        <div className="p-2">
+          {Object.keys(filteredCategories).length === 0 ? (
             <div className="text-center py-8 text-gray-400 dark:text-gray-500">
               <p className="text-sm">No prompts found</p>
             </div>
           ) : (
-            filteredPrompts.map((prompt) => {
-              const isActive = selectedPromptId === prompt._id && tempSelectedPromptId === prompt._id;
+            Object.entries(filteredCategories).map(([category, categoryPrompts]) => {
+              const isExpanded = expandedCategories.has(category)
+              const promptCount = categoryPrompts.length
+
               return (
-                <div
-                  key={prompt._id}
-                  className={` px-5 py-3 font-medium text-sm shadow-sm cursor-pointer transition-all duration-150 select-none flex items-center justify-between gap-2
-                    ${isActive
-                      ? "bg-green-600 text-white scale-105 shadow-lg ring-2 ring-green-400"
-                      : "bg-white/70 dark:bg-gray-800/70 text-gray-900 dark:text-white hover:bg-green-50 dark:hover:bg-green-900 hover:scale-105 hover:shadow-md border border-green-100 dark:border-green-900"}
-                  `}
-                  onClick={() => {
-                    onPromptSelect(prompt._id)
-                    // Close modal on mobile after selecting a prompt
-                    if (onClose) {
-                      onClose()
-                    }
-                  }}
-                >
-                  <span className="truncate">{prompt.title}</span>
-                  {isActive && (
-                    <div className="w-2 h-2 bg-white rounded-full flex-shrink-0"></div>
+                <div key={category} className="mb-2">
+                  {/* Category Header */}
+                  <button
+                    onClick={() => toggleCategory(category)}
+                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2">
+                      {isExpanded ? (
+                        <ChevronDown className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-green-600" />
+                      )}
+                      <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                        {category}
+                      </span>
+                    </div>
+                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                      {promptCount}
+                    </Badge>
+                  </button>
+
+                  {/* Prompts List */}
+                  {isExpanded && (
+                    <div className="ml-6 mt-1 space-y-1">
+                      {categoryPrompts.map((prompt) => {
+                        const isActive = selectedPromptId === prompt._id || tempSelectedPromptId === prompt._id
+                        return (
+                          <div
+                            key={prompt._id}
+                            onClick={() => {
+                              onPromptSelect(prompt._id)
+                              if (onClose) {
+                                onClose()
+                              }
+                            }}
+                            className={`px-3 py-2 rounded-md text-sm cursor-pointer transition-all ${
+                              isActive
+                                ? "bg-green-600 text-white font-medium shadow-md"
+                                : "text-gray-700 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/30 hover:text-green-700 dark:hover:text-green-400"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="truncate">{prompt.title}</span>
+                              {isActive && (
+                                <div className="w-2 h-2 bg-white rounded-full flex-shrink-0"></div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
                   )}
                 </div>
-              );
+              )
             })
           )}
         </div>

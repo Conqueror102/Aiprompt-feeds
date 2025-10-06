@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AI_AGENTS } from "@/lib/constants"
+import { toast } from "@/hooks/use-toast"
 
 interface DevModeInterfaceProps {
   prompts: any[]
@@ -19,11 +20,23 @@ interface DevModeInterfaceProps {
 
 export default function DevModeInterface({ prompts, currentUserId, onDeactivate }: DevModeInterfaceProps) {
   
-  const launchAgent = (agent: string, prompt: string) => {
+  const launchAgent = async (agent: string, prompt: string) => {
     // Lazy import to avoid SSR issues
-    import("@/lib/launch-agent").then(({ launchExternalAgent }) => {
-      launchExternalAgent(agent, prompt)
-    })
+    const { launchExternalAgent } = await import("@/lib/launch-agent")
+    const result = await launchExternalAgent(agent, prompt)
+    
+    if (result.success) {
+      toast({
+        title: result.needsClipboard ? "Prompt Copied!" : "Success",
+        description: result.message,
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: result.message || "Failed to launch AI agent",
+        variant: "destructive",
+      })
+    }
   }
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTech, setSelectedTech] = useState<string>("")

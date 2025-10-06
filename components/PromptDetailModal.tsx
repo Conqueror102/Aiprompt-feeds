@@ -52,6 +52,7 @@ export default function PromptDetailModal({
   const [averageRating, setAverageRating] = useState<number | null>(prompt?.rating ?? null)
   const [ratingCount, setRatingCount] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [clipboardNotice, setClipboardNotice] = useState<string>("")
 
   useEffect(() => {
     if (!prompt || !currentUserId || !isOpen) return
@@ -139,17 +140,48 @@ export default function PromptDetailModal({
     }
   };
 
-  const handleRunChat = () => {
+  const handleAgentChange = async (agent: string) => {
+    setSelectedAgent(agent)
+    
+    // Check if this agent needs clipboard
+    const { mapAgentNameToKey } = await import("@/lib/launch-agent")
+    const AI_MODELS_CONFIG = (await import("@/lib/ai-models-config")).default
+    
+    const key = mapAgentNameToKey(agent)
+    const cfg = key ? AI_MODELS_CONFIG[key] : null
+    
+    if (cfg && (cfg.type === "clipboard" || cfg.type === "clipboard-special")) {
+      setClipboardNotice(cfg.instruction || "Prompt will be copied to clipboard when you click Run")
+    } else {
+      setClipboardNotice("")
+    }
+  }
+
+  const handleRunWithAI = async () => {
     if (!selectedAgent) {
       toast({
         title: "Select an AI Agent",
-        description: "Please select an AI agent to start chatting",
+        description: "Please select an AI agent to run this prompt",
         variant: "destructive",
       })
       return
     }
 
-    onOpenChat(selectedAgent, prompt.content)
+    const { launchExternalAgent } = await import("@/lib/launch-agent")
+    const result = await launchExternalAgent(selectedAgent, prompt.content)
+    
+    if (result.success) {
+      toast({
+        title: result.needsClipboard ? "Prompt Copied!" : "Success",
+        description: result.message,
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: result.message || "Failed to launch AI agent",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleRate = async (star: number) => {
@@ -327,6 +359,16 @@ export default function PromptDetailModal({
           {/* Action Buttons */}
           <div className="flex flex-col gap-3 sm:gap-4 pt-4 border-t">
             <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                onClick={handleEditPrompt}
+                variant="outline"
+                className="flex-1 bg-transparent text-xs sm:text-sm"
+              >
+                <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                <span className="hidden sm:inline">{isOwner ? "Edit Prompt" : "Edit & Use"}</span>
+                <span className="sm:hidden">{isOwner ? "Edit" : "Edit & Use"}</span>
+              </Button>
+
               <Button onClick={handleCopy} variant="outline" className="flex-1 bg-transparent text-xs sm:text-sm">
                 <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                 <span className="hidden sm:inline">Copy to Clipboard</span>
@@ -338,20 +380,10 @@ export default function PromptDetailModal({
                 <span className="hidden sm:inline">Share</span>
                 <span className="sm:hidden">Share</span>
               </Button>
-
-              <Button
-                onClick={handleEditPrompt}
-                variant="outline"
-                className="flex-1 bg-transparent text-xs sm:text-sm"
-              >
-                <Edit3 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                <span className="hidden sm:inline">{isOwner ? "Edit Prompt" : "Use & Edit"}</span>
-                <span className="sm:hidden">{isOwner ? "Edit" : "Use & Edit"}</span>
-              </Button>
             </div>
 
             <div className="flex-1 space-y-2">
-              <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+              <Select value={selectedAgent} onValueChange={handleAgentChange}>
                 <SelectTrigger className="text-xs sm:text-sm">
                   <SelectValue placeholder="Select AI Agent" />
                 </SelectTrigger>
@@ -364,11 +396,16 @@ export default function PromptDetailModal({
                 </SelectContent>
               </Select>
 
-              <Button onClick={handleRunChat} className="w-full bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm">
-                <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                <Zap className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                <span className="hidden sm:inline">Run Chat</span>
-                <span className="sm:hidden">Chat</span>
+              {clipboardNotice && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-2 text-xs text-blue-700 dark:text-blue-300">
+                  ℹ️ {clipboardNotice}
+                </div>
+              )}
+
+              <Button onClick={handleRunWithAI} className="w-full bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm">
+                <Zap className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                <span className="hidden sm:inline">Run with AI</span>
+                <span className="sm:hidden">Run</span>
               </Button>
             </div>
           </div>

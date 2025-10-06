@@ -1,17 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Heart, Bookmark, Copy, ExternalLink, MoreHorizontal, Eye, Star, Edit3, Share, Wrench } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { AI_AGENTS } from "@/lib/constants"
+import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { toast } from "@/hooks/use-toast"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useRouter } from "next/navigation"
+import { copyToClipboard, shareContent } from "@/utils/clipboard"
+import PromptCardHeader from "@/components/prompts/PromptCardHeader"
+import PromptCardActions from "@/components/prompts/PromptCardActions"
+import RunPromptDialog from "@/components/prompts/RunPromptDialog"
 
 interface PromptCardProps {
   prompt: {
@@ -60,24 +57,55 @@ export default function PromptCard({
   const [likesCount, setLikesCount] = useState(prompt.likes)
   const [selectedAgent, setSelectedAgent] = useState<string>("none")
   const [isRunModalOpen, setIsRunModalOpen] = useState(false)
+  const [clipboardNotice, setClipboardNotice] = useState<string>("")
 
   const handleRun = () => {
     setIsRunModalOpen(true)
+    setClipboardNotice("") // Reset notice when opening modal
   }
 
-  const handleConfirmRun = () => {
+  const handleAgentChange = async (agent: string) => {
+    setSelectedAgent(agent)
+    
+    // Check if this agent needs clipboard
+    const { mapAgentNameToKey } = await import("@/lib/launch-agent")
+    const AI_MODELS_CONFIG = (await import("@/lib/ai-models-config")).default
+    
+    const key = mapAgentNameToKey(agent)
+    const cfg = key ? AI_MODELS_CONFIG[key] : null
+    
+    if (cfg && (cfg.type === "clipboard" || cfg.type === "clipboard-special")) {
+      setClipboardNotice(cfg.instruction || "Prompt will be copied to clipboard when you click Run")
+    } else {
+      setClipboardNotice("")
+    }
+  }
+
+  const handleConfirmRun = async () => {
     if (selectedAgent === "none") return
-    import("@/lib/launch-agent").then(({ launchExternalAgent }) => {
-      launchExternalAgent(selectedAgent, prompt.content)
-      setIsRunModalOpen(false)
-    })
+    
+    const { launchExternalAgent } = await import("@/lib/launch-agent")
+    const result = await launchExternalAgent(selectedAgent, prompt.content)
+    
+    if (result.success) {
+      toast({
+        title: result.needsClipboard ? "Prompt Copied!" : "Success",
+        description: result.message,
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: result.message || "Failed to launch AI agent",
+        variant: "destructive",
+      })
+    }
+    
+    setIsRunModalOpen(false)
   }
 
   const handleToolClick = async (tool: string) => {
-    try {
-      await navigator.clipboard.writeText(tool)
-      toast({ title: "Tool copied", description: tool })
-    } catch {}
+    await copyToClipboard(tool)
+    toast({ title: "Tool copied", description: tool })
     const q = encodeURIComponent(`${tool} documentation`)
     window.open(`https://www.google.com/search?q=${q}`, "_blank", "noopener,noreferrer")
   }
@@ -91,6 +119,11 @@ export default function PromptCard({
     setSaved(isSaved)
   }, [isSaved])
 
+  // Sync likes count with prompt.likes when it changes
+  useEffect(() => {
+    setLikesCount(prompt.likes)
+  }, [prompt.likes])
+
   const isOwner = currentUserId === prompt.createdBy._id
 
   const handleEdit = () => {
@@ -98,13 +131,13 @@ export default function PromptCard({
   }
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(prompt.content)
+    const success = await copyToClipboard(prompt.content)
+    if (success) {
       toast({
         title: "Copied!",
         description: "Prompt copied to clipboard",
       })
-    } catch (error) {
+    } else {
       toast({
         title: "Error",
         description: "Failed to copy prompt",
@@ -123,6 +156,14 @@ export default function PromptCard({
       return
     }
 
+    // If onLike callback is provided, use it (this means parent manages state)
+    if (onLike) {
+      console.log('Using parent onLike callback for:', prompt._id)
+      onLike(prompt._id)
+      return
+    }
+
+    // Fallback: manage state locally (for pages that don't use the hook)
     try {
       const response = await fetch("/api/user/like-prompt", {
         method: "POST",
@@ -136,7 +177,6 @@ export default function PromptCard({
       if (response.ok) {
         setLiked(!liked)
         setLikesCount((prev) => (liked ? prev - 1 : prev + 1))
-        onLike?.(prompt._id)
       }
     } catch (error) {
       toast({
@@ -185,41 +225,29 @@ export default function PromptCard({
   }
 
   const handleShare = async () => {
-    const shareLink = `${window.location.origin}?prompt=${prompt._id}`;
+    const shareLink = `${window.location.origin}?prompt=${prompt._id}`
+    const shared = await shareContent(
+      prompt.title,
+      prompt.description || 'Check out this prompt!',
+      shareLink
+    )
     
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: prompt.title,
-          text: prompt.description || 'Check out this prompt!',
-          url: shareLink,
-        });
-      } catch (error) {
-        console.error('Share failed:', error);
-        // Fallback to clipboard
-        await handleCopyLink(shareLink);
+    if (!shared) {
+      const copied = await copyToClipboard(shareLink)
+      if (copied) {
+        toast({
+          title: "Link Copied!",
+          description: "Share link copied to clipboard",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to copy link",
+          variant: "destructive",
+        })
       }
-    } else {
-      // Fallback for browsers without native sharing
-      await handleCopyLink(shareLink);
     }
-  };
-
-  const handleCopyLink = async (link: string) => {
-    try {
-      await navigator.clipboard.writeText(link);
-      toast({
-        title: "Link Copied!",
-        description: "Share link copied to clipboard",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to copy link",
-        variant: "destructive",
-      });
-    }
-  };
+  }
 
   const highlight = isSelected || tempSelectedPromptId === prompt._id;
 
@@ -228,92 +256,21 @@ export default function PromptCard({
       highlight ? 'border-2 border-green-500 shadow-lg' : 'border border-green-500/40'
     }`}>
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
-              <AvatarFallback className="bg-green-100 text-green-600 text-xs sm:text-sm">
-                {prompt.createdBy.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="text-xs sm:text-sm font-medium">{prompt.createdBy.name}</p>
-              <p className="text-xs text-muted-foreground">{new Date(prompt.createdAt).toLocaleDateString()}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3 ml-auto">
-            {typeof prompt.rating === 'number' && (
-              <div className="flex items-center gap-1">
-                <Star className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-400 fill-yellow-400" />
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                  {prompt.rating.toFixed(1)}
-                </span>
-              </div>
-            )}
-            {prompt.private && isOwner && (
-              <Badge variant="destructive" className="text-xs mr-2">
-                Private
-              </Badge>
-            )}
-            {/* Debug: Show wrench for all Development prompts, then we'll add tools condition */}
-            {prompt.category === "Development" && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" aria-label="Recommended Tools">
-                    <Wrench className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {Array.isArray(prompt.tools) && prompt.tools.length > 0 && (
-                    <>
-                      <DropdownMenuItem disabled className="text-xs font-semibold text-gray-500">Tools</DropdownMenuItem>
-                      {prompt.tools.map((tool) => (
-                        <DropdownMenuItem key={tool} onClick={() => handleToolClick(tool)}>
-                          {tool}
-                        </DropdownMenuItem>
-                      ))}
-                    </>
-                  )}
-                  {Array.isArray(prompt.technologies) && prompt.technologies.length > 0 && (
-                    <>
-                      <DropdownMenuItem disabled className="text-xs font-semibold text-gray-500">Technologies</DropdownMenuItem>
-                      {prompt.technologies.map((tech) => (
-                        <DropdownMenuItem key={tech} onClick={() => handleToolClick(tech)}>
-                          {tech}
-                        </DropdownMenuItem>
-                      ))}
-                    </>
-                  )}
-                  {(!Array.isArray(prompt.tools) || prompt.tools.length === 0) && 
-                   (!Array.isArray(prompt.technologies) || prompt.technologies.length === 0) && (
-                    <DropdownMenuItem disabled>No tools or technologies specified</DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onViewDetails?.(prompt._id)}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Details
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleShare}>
-                  <Share className="mr-2 h-4 w-4" />
-                  Share
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleEdit}>
-                  <Edit3 className="mr-2 h-4 w-4" />
-                  {isOwner ? "Edit" : "Use & Edit"}
-                </DropdownMenuItem>
-                <DropdownMenuItem>Report</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+        <PromptCardHeader
+          creatorName={prompt.createdBy.name}
+          creatorId={prompt.createdBy._id}
+          createdAt={prompt.createdAt}
+          rating={prompt.rating}
+          isPrivate={prompt.private}
+          isOwner={isOwner}
+          category={prompt.category}
+          tools={prompt.tools}
+          technologies={prompt.technologies}
+          onViewDetails={() => onViewDetails?.(prompt._id)}
+          onShare={handleShare}
+          onEdit={handleEdit}
+          onToolClick={handleToolClick}
+        />
 
         <div className="space-y-2">
           <h3 className="text-base sm:text-lg font-semibold line-clamp-2">{prompt.title}</h3>
@@ -339,93 +296,25 @@ export default function PromptCard({
       </CardContent>
 
       <CardFooter className="pt-0">
-        <div className="flex items-center justify-between w-full gap-2">
-          <div className="flex items-center space-x-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLike}
-              className={`hover:scale-105 transition-transform ${
-                liked ? "text-red-500 hover:text-red-600" : "text-gray-500 hover:text-red-500"
-              }`}
-            >
-              <Heart className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 ${liked ? "fill-current" : ""}`} />
-              <span className="text-xs sm:text-sm">{likesCount}</span>
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSave}
-              className={`hover:scale-105 transition-transform ${
-                saved ? "text-blue-500 hover:text-blue-600" : "text-gray-500 hover:text-blue-500"
-              }`}
-            >
-              <Bookmark className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 ${saved ? "fill-current" : ""}`} />
-              <span className="hidden sm:inline">Save</span>
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={handleCopy}
-              size="sm"
-              variant="outline"
-              className="hover:scale-105 transition-transform text-xs"
-            >
-              <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Copy</span>
-            </Button>
-
-            <Button
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white h-8"
-              onClick={handleRun}
-            >
-              <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-              Run
-            </Button>
-            
-          </div>
-        </div>
+        <PromptCardActions
+          liked={liked}
+          saved={saved}
+          likesCount={likesCount}
+          onLike={handleLike}
+          onSave={handleSave}
+          onCopy={handleCopy}
+          onRun={handleRun}
+        />
       </CardFooter>
 
-      <Dialog open={isRunModalOpen} onOpenChange={setIsRunModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Run with AI</DialogTitle>
-            <DialogDescription>Select an AI agent to run this prompt with.</DialogDescription>
-          </DialogHeader>
-
-          <div className="flex flex-col gap-3">
-            <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select AI" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Select AI</SelectItem>
-                {AI_AGENTS.map((agent) => (
-                  <SelectItem key={agent} value={agent}>
-                    {agent}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsRunModalOpen(false)}>Cancel</Button>
-              <Button
-                className="bg-green-600 hover:bg-green-700 text-white"
-                disabled={selectedAgent === "none"}
-                onClick={handleConfirmRun}
-              >
-                Run
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
+      <RunPromptDialog
+        isOpen={isRunModalOpen}
+        selectedAgent={selectedAgent}
+        onAgentChange={handleAgentChange}
+        onConfirm={handleConfirmRun}
+        onCancel={() => setIsRunModalOpen(false)}
+        clipboardNotice={clipboardNotice}
+      />
     </Card>
   )
 }

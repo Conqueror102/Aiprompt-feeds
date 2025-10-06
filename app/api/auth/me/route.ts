@@ -29,7 +29,11 @@ export async function GET(request: NextRequest) {
       name: user.name,
       email: user.email,
       role: user.role,
-      createdAt:user.createdAt
+      createdAt: user.createdAt,
+      followers: user.followers?.length || 0,
+      following: user.following?.length || 0,
+      bio: user.bio,
+      avatar: user.avatar
     })
   } catch (error) {
     console.error("Auth verification error:", error)
