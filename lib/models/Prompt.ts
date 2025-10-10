@@ -59,6 +59,12 @@ const PromptSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Comment count for performance
+    commentCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,

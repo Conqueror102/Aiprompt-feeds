@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import dbConnect from "@/lib/mongodb"
 import User from "@/lib/models/User"
 import Prompt from "@/lib/models/Prompt"
+import { BadgeService } from "@/services/badge-service"
 import { verifyToken } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
@@ -46,6 +47,9 @@ export async function POST(request: NextRequest) {
 
     await user.save()
     await prompt.save()
+
+    // Trigger badge check asynchronously (non-blocking)
+    BadgeService.checkUserBadges(decoded.userId).catch(() => { })
 
     return NextResponse.json({
       message: isLiked ? "Prompt unliked" : "Prompt liked",

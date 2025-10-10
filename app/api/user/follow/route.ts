@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import dbConnect from '@/lib/mongodb'
 import User from '@/lib/models/User'
 import { verifyToken } from '@/lib/auth'
+import { BadgeService } from '@/services/badge-service'
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,6 +49,12 @@ export async function POST(req: NextRequest) {
     await User.findByIdAndUpdate(targetUserId, {
       $addToSet: { followers: currentUserId },
     })
+
+    // Trigger badge checks for both users (async, non-blocking)
+    Promise.all([
+      BadgeService.checkUserBadges(currentUserId),
+      BadgeService.checkUserBadges(targetUserId)
+    ]).catch(() => { })
 
     return NextResponse.json({ message: 'Successfully followed user' })
   } catch (error) {

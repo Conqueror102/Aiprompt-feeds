@@ -1,5 +1,5 @@
 // Component for prompt card action buttons
-import { Heart, Bookmark, Copy, ExternalLink } from 'lucide-react'
+import { Heart, Bookmark, Copy, ExternalLink, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface PromptCardActionsProps {
@@ -10,6 +10,7 @@ interface PromptCardActionsProps {
   onSave: () => void
   onCopy: () => void
   onRun: () => void
+  onComment?: () => void
 }
 
 export default function PromptCardActions({
@@ -20,6 +21,7 @@ export default function PromptCardActions({
   onSave,
   onCopy,
   onRun,
+  onComment,
 }: PromptCardActionsProps) {
   return (
     <div className="flex items-center justify-between w-full gap-2">
@@ -28,9 +30,8 @@ export default function PromptCardActions({
           variant="ghost"
           size="sm"
           onClick={onLike}
-          className={`hover:scale-105 transition-transform ${
-            liked ? 'text-red-500 hover:text-red-600' : 'text-gray-500 hover:text-red-500'
-          }`}
+          className={`hover:scale-105 transition-transform ${liked ? 'text-red-500 hover:text-red-600' : 'text-gray-500 hover:text-red-500'
+            }`}
         >
           <Heart className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 ${liked ? 'fill-current' : ''}`} />
           <span className="text-xs sm:text-sm">{likesCount}</span>
@@ -40,13 +41,24 @@ export default function PromptCardActions({
           variant="ghost"
           size="sm"
           onClick={onSave}
-          className={`hover:scale-105 transition-transform ${
-            saved ? 'text-blue-500 hover:text-blue-600' : 'text-gray-500 hover:text-blue-500'
-          }`}
+          className={`hover:scale-105 transition-transform ${saved ? 'text-blue-500 hover:text-blue-600' : 'text-gray-500 hover:text-blue-500'
+            }`}
         >
           <Bookmark className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 ${saved ? 'fill-current' : ''}`} />
           <span className="hidden sm:inline">Save</span>
         </Button>
+
+        {onComment && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onComment}
+            className="hover:scale-105 transition-transform text-gray-500 hover:text-green-600"
+          >
+            <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            <span className="hidden sm:inline">Comment</span>
+          </Button>
+        )}
       </div>
 
       <div className="flex items-center gap-2">

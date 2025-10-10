@@ -2,11 +2,13 @@
 import { useState, useEffect } from 'react'
 import { promptService } from '@/services/prompt-service'
 import { toast } from '@/hooks/use-toast'
+import { useBadgeChecker } from '@/hooks/use-badges'
 
 export function usePromptInteractions(userId?: string) {
   const [likedPromptIds, setLikedPromptIds] = useState<Set<string>>(new Set())
   const [savedPromptIds, setSavedPromptIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(false)
+  const { checkAfterPromptLike, checkAfterPromptSave } = useBadgeChecker()
 
   const fetchUserPrompts = async () => {
     if (!userId) {
@@ -24,10 +26,10 @@ export function usePromptInteractions(userId?: string) {
 
       const likedIds = new Set(likedPrompts.map((p) => p._id))
       const savedIds = new Set(savedPrompts.map((p) => p._id))
-      
+
       console.log('Fetched liked prompts:', likedIds)
       console.log('Fetched saved prompts:', savedIds)
-      
+
       setLikedPromptIds(likedIds)
       setSavedPromptIds(savedIds)
     } catch (error) {
@@ -63,6 +65,7 @@ export function usePromptInteractions(userId?: string) {
     try {
       await promptService.like(promptId)
       console.log('Like API call successful for:', promptId)
+      checkAfterPromptLike()
       return true
     } catch (error) {
       console.error('Like API call failed:', error)
@@ -98,7 +101,8 @@ export function usePromptInteractions(userId?: string) {
     try {
       await promptService.save(promptId)
       const wasSaved = savedPromptIds.has(promptId)
-      
+      checkAfterPromptSave()
+
       setSavedPromptIds((prev) => {
         const newSet = new Set(prev)
         if (newSet.has(promptId)) {

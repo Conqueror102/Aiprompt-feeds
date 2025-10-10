@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { UserIcon, Calendar, Bookmark, Edit, X, Users } from "lucide-react"
+import { UserIcon, Calendar, Bookmark, Edit, X, Users, MessageSquare, Heart } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -65,6 +66,7 @@ export default function ProfilePage() {
     email: "",
   })
   const [updating, setUpdating] = useState(false)
+  const [commentActivity, setCommentActivity] = useState<any | null>(null)
 
   useEffect(() => {
     fetchUserData()
@@ -143,6 +145,13 @@ export default function ProfilePage() {
       if (followingResponse.ok) {
         const followingData = await followingResponse.json()
         setFollowing(followingData.users)
+      }
+
+      // Fetch comment activity
+      const activityResponse = await fetch(`/api/user/comments/activity?userId=${userData.id}`)
+      if (activityResponse.ok) {
+        const activityData = await activityResponse.json()
+        if (activityData.success) setCommentActivity(activityData.data)
       }
     } catch (error) {
       console.error("Failed to fetch user data:", error)
@@ -305,6 +314,36 @@ export default function ProfilePage() {
           </TabsList>
 
           <TabsContent value="posted" className="mt-6">
+            {/* Comment Activity */}
+            {commentActivity && (
+              <Card className="mb-6">
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 text-gray-700 dark:text-gray-200">
+                        <MessageSquare className="h-4 w-4" />
+                        <span className="text-sm">Total Comments</span>
+                      </div>
+                      <div className="text-2xl font-bold">{commentActivity.totalComments}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 text-gray-700 dark:text-gray-200">
+                        <Heart className="h-4 w-4" />
+                        <span className="text-sm">Total Likes</span>
+                      </div>
+                      <div className="text-2xl font-bold">{commentActivity.totalLikes}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 text-gray-700 dark:text-gray-200">
+                        <Users className="h-4 w-4" />
+                        <span className="text-sm">Top Commenters</span>
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">See prompt pages for details</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             {userPrompts.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-12">

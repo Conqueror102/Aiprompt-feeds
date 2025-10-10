@@ -66,14 +66,14 @@ export default function PromptCard({
 
   const handleAgentChange = async (agent: string) => {
     setSelectedAgent(agent)
-    
+
     // Check if this agent needs clipboard
     const { mapAgentNameToKey } = await import("@/lib/launch-agent")
     const AI_MODELS_CONFIG = (await import("@/lib/ai-models-config")).default
-    
+
     const key = mapAgentNameToKey(agent)
     const cfg = key ? AI_MODELS_CONFIG[key] : null
-    
+
     if (cfg && (cfg.type === "clipboard" || cfg.type === "clipboard-special")) {
       setClipboardNotice(cfg.instruction || "Prompt will be copied to clipboard when you click Run")
     } else {
@@ -83,10 +83,10 @@ export default function PromptCard({
 
   const handleConfirmRun = async () => {
     if (selectedAgent === "none") return
-    
+
     const { launchExternalAgent } = await import("@/lib/launch-agent")
     const result = await launchExternalAgent(selectedAgent, prompt.content)
-    
+
     if (result.success) {
       toast({
         title: result.needsClipboard ? "Prompt Copied!" : "Success",
@@ -99,7 +99,7 @@ export default function PromptCard({
         variant: "destructive",
       })
     }
-    
+
     setIsRunModalOpen(false)
   }
 
@@ -231,7 +231,7 @@ export default function PromptCard({
       prompt.description || 'Check out this prompt!',
       shareLink
     )
-    
+
     if (!shared) {
       const copied = await copyToClipboard(shareLink)
       if (copied) {
@@ -249,12 +249,21 @@ export default function PromptCard({
     }
   }
 
+  const handleComment = () => {
+    // Prefer opening details modal if provided
+    if (onViewDetails) {
+      onViewDetails(prompt._id)
+      return
+    }
+    // Fallback: navigate to home with shared prompt param to open modal
+    router.push(`/?prompt=${prompt._id}`)
+  }
+
   const highlight = isSelected || tempSelectedPromptId === prompt._id;
 
   return (
-    <Card className={`w-full hover:shadow-lg transition-all duration-200 ${
-      highlight ? 'border-2 border-green-500 shadow-lg' : 'border border-green-500/40'
-    }`}>
+    <Card className={`w-full hover:shadow-lg transition-all duration-200 ${highlight ? 'border-2 border-green-500 shadow-lg' : 'border border-green-500/40'
+      }`}>
       <CardHeader className="pb-3">
         <PromptCardHeader
           creatorName={prompt.createdBy.name}
@@ -304,6 +313,7 @@ export default function PromptCard({
           onSave={handleSave}
           onCopy={handleCopy}
           onRun={handleRun}
+          onComment={handleComment}
         />
       </CardFooter>
 

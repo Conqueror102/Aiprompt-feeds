@@ -2,9 +2,11 @@
 import { useState } from 'react'
 import { userService } from '@/services/user-service'
 import { toast } from '@/hooks/use-toast'
+import { useBadgeChecker } from '@/hooks/use-badges'
 
 export function useFollow() {
   const [loading, setLoading] = useState(false)
+  const { checkAfterFollow } = useBadgeChecker()
 
   const toggleFollow = async (
     userId: string,
@@ -26,6 +28,7 @@ export function useFollow() {
           description: 'You are now following this user',
         })
       }
+      checkAfterFollow()
       onSuccess?.()
       return true
     } catch (error) {

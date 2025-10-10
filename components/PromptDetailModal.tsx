@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast"
 import { AI_AGENTS } from "@/lib/constants"
 import { useRouter } from "next/navigation"
+import CommentSection from "@/components/comments/CommentSection"
 
 interface PromptDetailModalProps {
   prompt: {
@@ -69,7 +70,7 @@ export default function PromptDetailModal({
           const data = await res.json()
           if (typeof data.value === "number") setUserRating(data.value)
         }
-      } catch {}
+      } catch { }
     }
     fetchUserRating()
     // eslint-disable-next-line
@@ -103,9 +104,9 @@ export default function PromptDetailModal({
 
   const handleShare = async () => {
     if (!prompt) return
-    
+
     const shareLink = `${window.location.origin}?prompt=${prompt._id}`;
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -142,14 +143,14 @@ export default function PromptDetailModal({
 
   const handleAgentChange = async (agent: string) => {
     setSelectedAgent(agent)
-    
+
     // Check if this agent needs clipboard
     const { mapAgentNameToKey } = await import("@/lib/launch-agent")
     const AI_MODELS_CONFIG = (await import("@/lib/ai-models-config")).default
-    
+
     const key = mapAgentNameToKey(agent)
     const cfg = key ? AI_MODELS_CONFIG[key] : null
-    
+
     if (cfg && (cfg.type === "clipboard" || cfg.type === "clipboard-special")) {
       setClipboardNotice(cfg.instruction || "Prompt will be copied to clipboard when you click Run")
     } else {
@@ -169,7 +170,7 @@ export default function PromptDetailModal({
 
     const { launchExternalAgent } = await import("@/lib/launch-agent")
     const result = await launchExternalAgent(selectedAgent, prompt.content)
-    
+
     if (result.success) {
       toast({
         title: result.needsClipboard ? "Prompt Copied!" : "Success",
@@ -205,12 +206,12 @@ export default function PromptDetailModal({
         setAverageRating(data.average)
         setRatingCount(data.count)
         setUserRating(star)
-        
+
         // Update the prompt with the new rating data
         if (data.prompt && onRated) {
           onRated(prompt._id, data.average)
         }
-        
+
         toast({ title: "Thank you!", description: "Your rating has been submitted." })
       } else {
         const err = await res.json()
@@ -289,7 +290,7 @@ export default function PromptDetailModal({
                 </Badge>
               ))}
             </div>
-            
+
             {/* Tools */}
             {Array.isArray(prompt.tools) && prompt.tools.length > 0 && (
               <div>
@@ -303,7 +304,7 @@ export default function PromptDetailModal({
                 </div>
               </div>
             )}
-            
+
             {/* Technologies */}
             {Array.isArray(prompt.technologies) && prompt.technologies.length > 0 && (
               <div>
@@ -333,7 +334,7 @@ export default function PromptDetailModal({
           <div className="flex flex-col items-start gap-2 pt-2">
             <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200">Rate this prompt:</span>
             <div className="flex items-center gap-1">
-              {[1,2,3,4,5].map((star) => (
+              {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   type="button"
@@ -344,9 +345,8 @@ export default function PromptDetailModal({
                   className="focus:outline-none"
                 >
                   <Star
-                    className={`h-5 w-5 sm:h-6 sm:w-6 transition-colors ${
-                      (hoverRating || userRating) >= star ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
-                    }`}
+                    className={`h-5 w-5 sm:h-6 sm:w-6 transition-colors ${(hoverRating || userRating) >= star ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                      }`}
                   />
                 </button>
               ))}
@@ -374,7 +374,7 @@ export default function PromptDetailModal({
                 <span className="hidden sm:inline">Copy to Clipboard</span>
                 <span className="sm:hidden">Copy</span>
               </Button>
-              
+
               <Button onClick={handleShare} variant="outline" className="flex-1 bg-transparent text-xs sm:text-sm">
                 <Share className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                 <span className="hidden sm:inline">Share</span>
@@ -408,6 +408,15 @@ export default function PromptDetailModal({
                 <span className="sm:hidden">Run</span>
               </Button>
             </div>
+          </div>
+
+          {/* Comments Section */}
+          <div className="pt-4 border-t">
+            <div className="flex items-center gap-2 mb-2">
+              <MessageSquare className="h-4 w-4" />
+              <span className="text-sm font-medium">Comments</span>
+            </div>
+            <CommentSection promptId={prompt._id} className="border-none p-0" />
           </div>
         </div>
       </DialogContent>

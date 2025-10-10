@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import dbConnect from "@/lib/mongodb"
 import Prompt from "@/lib/models/Prompt"
+import { BadgeService } from "@/services/badge-service"
 import User from "@/lib/models/User"
 import { verifyToken } from "@/lib/auth"
 
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "User not found" }, { status: 404 })
     }
 
-  const { title, content, description, category, aiAgents, technologies, tools, private: isPrivate } = await request.json()
+    const { title, content, description, category, aiAgents, technologies, tools, private: isPrivate } = await request.json()
 
     if (!title || !content || !category || !aiAgents || aiAgents.length === 0) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
@@ -44,6 +45,9 @@ export async function POST(request: NextRequest) {
     })
 
     const populatedPrompt = await Prompt.findById(prompt._id).populate("createdBy", "name email")
+
+    // Trigger badge check asynchronously (non-blocking)
+    BadgeService.checkUserBadges(decoded.userId).catch(() => { })
 
     return NextResponse.json({
       message: "Prompt created successfully",
