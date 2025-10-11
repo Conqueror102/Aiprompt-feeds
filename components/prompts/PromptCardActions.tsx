@@ -6,6 +6,7 @@ interface PromptCardActionsProps {
   liked: boolean
   saved: boolean
   likesCount: number
+  commentCount?: number
   onLike: () => void
   onSave: () => void
   onCopy: () => void
@@ -17,6 +18,7 @@ export default function PromptCardActions({
   liked,
   saved,
   likesCount,
+  commentCount = 0,
   onLike,
   onSave,
   onCopy,
@@ -56,7 +58,7 @@ export default function PromptCardActions({
             className="hover:scale-105 transition-transform text-gray-500 hover:text-green-600"
           >
             <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-            <span className="hidden sm:inline">Comment</span>
+            <span className="text-xs sm:text-sm">{commentCount}</span>
           </Button>
         )}
       </div>

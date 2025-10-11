@@ -219,7 +219,7 @@ export function useBadgeChecker() {
           // Badges will be shown via the main useBadges hook
           console.log(`Badge check after ${action}:`, data.data.newBadges)
         }
-      }, 1000)
+      }, 200)
     } catch (err) {
       console.error('Error checking badges after action:', err)
     }

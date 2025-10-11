@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast"
 import { AI_AGENTS } from "@/lib/constants"
 import { useRouter } from "next/navigation"
 import CommentSection from "@/components/comments/CommentSection"
+import { cacheService } from "@/services/cache-service"
 
 interface PromptDetailModalProps {
   prompt: {
@@ -206,6 +207,16 @@ export default function PromptDetailModal({
         setAverageRating(data.average)
         setRatingCount(data.count)
         setUserRating(star)
+
+        // Update cache selectively instead of clearing all
+        const updated = cacheService.updatePromptInCache(prompt._id, { 
+          rating: data.average 
+        })
+        
+        if (!updated) {
+          console.log('Cache update failed for rating, using smart invalidation')
+          cacheService.smartInvalidate('rating')
+        }
 
         // Update the prompt with the new rating data
         if (data.prompt && onRated) {

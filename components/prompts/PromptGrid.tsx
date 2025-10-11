@@ -14,6 +14,7 @@ interface PromptGridProps {
   onLike: (promptId: string) => void
   onSave: (promptId: string) => void
   onViewDetails: (promptId: string) => void
+  onComment?: (promptId: string) => void
 }
 
 export default function PromptGrid({
@@ -27,6 +28,7 @@ export default function PromptGrid({
   onLike,
   onSave,
   onViewDetails,
+  onComment,
 }: PromptGridProps) {
   if (loading) {
     return (
@@ -62,6 +64,7 @@ export default function PromptGrid({
             onLike={onLike}
             onSave={onSave}
             onViewDetails={onViewDetails}
+            onComment={onComment}
             isSelected={selectedPromptId === prompt._id}
             tempSelectedPromptId={tempSelectedPromptId}
           />

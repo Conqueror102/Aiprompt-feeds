@@ -10,6 +10,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { CommentWithReplies, CommentsResponse, CommentActivity } from '@/types/comment'
 import { toast } from 'sonner'
+import { cacheService } from '@/services/cache-service'
 
 interface UseCommentsOptions {
   promptId?: string
@@ -59,7 +60,7 @@ export function useComments({
       
       const offset = reset ? 0 : comments.length
       const response = await fetch(
-        `/api/comments?promptId=${promptId}&sortBy=${sortBy}&limit=20&offset=${offset}`
+        `/api/comments?promptId=${promptId}&sortBy=${sortBy}&limit=10&offset=${offset}`
       )
       
       const data = await response.json()
@@ -84,7 +85,7 @@ export function useComments({
     } finally {
       setLoading(false)
     }
-  }, [promptId, sortBy, comments.length])
+  }, [promptId, sortBy])  // Removed comments.length dependency to prevent infinite loops
 
   // Create comment
   const createComment = useCallback(async (
@@ -141,6 +142,21 @@ export function useComments({
         // Add as top-level comment
         setComments(prev => [newComment, ...prev])
         setTotal(prev => prev + 1)
+        
+        // Update comment count in cache for the prompt
+        const authState = cacheService.getAuthState()
+        const cached = cacheService.getPrompts(authState)
+        const currentPrompt = cached?.find(p => p._id === promptId)
+        const newCommentCount = (currentPrompt?.commentCount || 0) + 1
+        
+        const updated = cacheService.updatePromptInCache(promptId, { 
+          commentCount: newCommentCount
+        })
+        
+        if (!updated) {
+          console.log('Cache update failed for comment count')
+          cacheService.smartInvalidate('comment')
+        }
       }
 
       toast.success(parentId ? 'Reply posted!' : 'Comment posted!')

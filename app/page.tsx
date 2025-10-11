@@ -8,6 +8,7 @@ import { usePrompts } from "@/hooks/use-prompts"
 import { usePromptFilters } from "@/hooks/use-prompt-filters"
 import { usePromptInteractions } from "@/hooks/use-prompt-interactions"
 import { useOpenSharedDialog } from "@/hooks/useOpenSharedDialog"
+import { useCommentModal } from "@/hooks/use-comment-modal"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
 import PromptSidebar from "@/components/PromptSidebar"
@@ -16,11 +17,13 @@ import AIAgentCollections from "@/components/AIAgentCollections"
 import PromptHeader from "@/components/prompts/PromptHeader"
 import PromptFilters from "@/components/prompts/PromptFilters"
 import PromptGrid from "@/components/prompts/PromptGrid"
+import CommentModal from "@/components/comments/CommentModal"
 
 export default function HomePage() {
   const { user } = useAuth()
-  const { prompts, loading } = usePrompts()
+  const { prompts, loading, setPrompts } = usePrompts()
   const { likedPromptIds, savedPromptIds, toggleLike, toggleSave } = usePromptInteractions(user?.id)
+  const { isOpen: isCommentModalOpen, selectedPrompt: commentPrompt, openCommentModal, closeCommentModal } = useCommentModal()
   
   const [selectedAgentForFilter, setSelectedAgentForFilter] = useState<string>("all")
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("")
@@ -70,6 +73,13 @@ export default function HomePage() {
     }
   }
 
+  const handleOpenComments = (promptId: string) => {
+    const prompt = prompts.find((p) => p._id === promptId)
+    if (prompt) {
+      openCommentModal(prompt)
+    }
+  }
+
   const handleOpenChat = (agent: string, prompt: string) => {
     launchExternalAgent(agent, prompt)
     setSelectedPromptForModal(null)
@@ -91,8 +101,46 @@ export default function HomePage() {
   }
 
   const handlePromptRated = (promptId: string, newRating: number) => {
+    // Update the prompt in the main prompts array
+    setPrompts(prevPrompts => 
+      prevPrompts.map(prompt => 
+        prompt._id === promptId 
+          ? { ...prompt, rating: newRating }
+          : prompt
+      )
+    )
+    
+    // Update the modal if it's open for this prompt
     if (selectedPromptForModal && selectedPromptForModal._id === promptId) {
       setSelectedPromptForModal({ ...selectedPromptForModal, rating: newRating } as Prompt)
+    }
+  }
+
+  // Enhanced like handler that updates prompts array
+  const handleLike = async (promptId: string) => {
+    const wasLiked = likedPromptIds.has(promptId)
+    
+    // Optimistically update the prompts array
+    setPrompts(prevPrompts => 
+      prevPrompts.map(prompt => 
+        prompt._id === promptId 
+          ? { ...prompt, likes: wasLiked ? prompt.likes - 1 : prompt.likes + 1 }
+          : prompt
+      )
+    )
+    
+    // Call the original toggle like
+    const success = await toggleLike(promptId)
+    
+    // Revert if failed
+    if (!success) {
+      setPrompts(prevPrompts => 
+        prevPrompts.map(prompt => 
+          prompt._id === promptId 
+            ? { ...prompt, likes: wasLiked ? prompt.likes + 1 : prompt.likes - 1 }
+            : prompt
+        )
+      )
     }
   }
 
@@ -185,9 +233,10 @@ export default function HomePage() {
               savedPromptIds={savedPromptIds}
               selectedPromptId={selectedPromptId}
               tempSelectedPromptId={tempSelectedPromptId}
-              onLike={toggleLike}
+              onLike={handleLike}
               onSave={toggleSave}
               onViewDetails={handleViewDetails}
+              onComment={handleOpenComments}
             />
           </div>
         </main>
@@ -203,6 +252,12 @@ export default function HomePage() {
         onRated={handlePromptRated}
       />
 
+      <CommentModal
+        prompt={commentPrompt}
+        isOpen={isCommentModalOpen}
+        onClose={closeCommentModal}
+        currentUserId={user?.id}
+      />
 
       <Footer />
     </div>

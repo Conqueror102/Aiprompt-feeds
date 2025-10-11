@@ -35,6 +35,7 @@ export interface Prompt {
   private?: boolean
   tools?: string[]
   technologies?: string[]
+  commentCount?: number
   createdAt: string
 }
 

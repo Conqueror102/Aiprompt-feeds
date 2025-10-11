@@ -29,6 +29,7 @@ interface PromptCardProps {
     private?: boolean
     tools?: string[]
     technologies?: string[]
+    commentCount?: number
   }
   isLiked?: boolean
   isSaved?: boolean
@@ -38,6 +39,7 @@ interface PromptCardProps {
   onSave?: (promptId: string) => void
   currentUserId?: string
   onViewDetails?: (promptId: string) => void
+  onComment?: (promptId: string) => void
 }
 
 export default function PromptCard({
@@ -50,6 +52,7 @@ export default function PromptCard({
   onSave,
   currentUserId,
   onViewDetails,
+  onComment,
 }: PromptCardProps) {
   const router = useRouter()
   const [liked, setLiked] = useState(isLiked)
@@ -250,19 +253,24 @@ export default function PromptCard({
   }
 
   const handleComment = () => {
-    // Prefer opening details modal if provided
+    // Use dedicated comment modal if provided
+    if (onComment) {
+      onComment(prompt._id)
+      return
+    }
+    // Fallback: open details modal if provided
     if (onViewDetails) {
       onViewDetails(prompt._id)
       return
     }
-    // Fallback: navigate to home with shared prompt param to open modal
+    // Final fallback: navigate to home with shared prompt param to open modal
     router.push(`/?prompt=${prompt._id}`)
   }
 
   const highlight = isSelected || tempSelectedPromptId === prompt._id;
 
   return (
-    <Card className={`w-full hover:shadow-lg transition-all duration-200 ${highlight ? 'border-2 border-green-500 shadow-lg' : 'border border-green-500/40'
+    <Card className={`w-full max-h-[500px] hover:shadow-lg transition-all duration-200 ${highlight ? 'border-2 border-green-500 shadow-lg' : 'border border-green-500/40'
       }`}>
       <CardHeader className="pb-3">
         <PromptCardHeader
@@ -309,6 +317,7 @@ export default function PromptCard({
           liked={liked}
           saved={saved}
           likesCount={likesCount}
+          commentCount={prompt.commentCount || 0}
           onLike={handleLike}
           onSave={handleSave}
           onCopy={handleCopy}

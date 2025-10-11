@@ -95,7 +95,8 @@ CommentSchema.virtual('replyCount', {
 CommentSchema.pre('save', async function(next) {
   if (this.parentId && this.isNew) {
     try {
-      const parentComment = await this.constructor.findById(this.parentId)
+      const Comment = this.constructor as mongoose.Model<any>
+      const parentComment = await Comment.findById(this.parentId)
       if (parentComment) {
         this.depth = Math.min(parentComment.depth + 1, 3) // Max depth of 3
       }
@@ -178,7 +179,7 @@ CommentSchema.statics.getPromptComments = async function(
   if (sortBy === 'oldest') sort = { createdAt: 1 }
   if (sortBy === 'mostLiked') sort = { likes: -1, createdAt: -1 }
   
-  const pipeline = [
+  const pipeline: any[] = [
     { 
       $match: { 
         promptId: new mongoose.Types.ObjectId(promptId),
@@ -211,7 +212,7 @@ CommentSchema.statics.getPromptComments = async function(
             }
           },
           { $sort: { createdAt: 1 } }, // Replies sorted oldest first
-          { $limit: 3 }, // Show first 3 replies
+          { $limit: 5 }, // Show first 5 replies (reduced from loading all)
           {
             $lookup: {
               from: 'users',
@@ -221,7 +222,22 @@ CommentSchema.statics.getPromptComments = async function(
               pipeline: [{ $project: { name: 1, avatar: 1 } }]
             }
           },
-          { $unwind: '$author' }
+          { $unwind: '$author' },
+          // Only include essential fields to reduce data transfer
+          {
+            $project: {
+              _id: 1,
+              content: 1,
+              authorId: 1,
+              author: 1,
+              likes: 1,
+              likedBy: 1,
+              createdAt: 1,
+              isEdited: 1,
+              editedAt: 1,
+              depth: 1
+            }
+          }
         ],
         as: 'replies'
       }

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { promptService } from '@/services/prompt-service'
 import { toast } from '@/hooks/use-toast'
 import { useBadgeChecker } from '@/hooks/use-badges'
+import { cacheService } from '@/services/cache-service'
 
 export function usePromptInteractions(userId?: string) {
   const [likedPromptIds, setLikedPromptIds] = useState<Set<string>>(new Set())
@@ -65,6 +66,24 @@ export function usePromptInteractions(userId?: string) {
     try {
       await promptService.like(promptId)
       console.log('Like API call successful for:', promptId)
+      
+      // Update cache selectively instead of clearing all
+      const likeChange = wasLiked ? -1 : 1
+      // We need to get current likes count first, then update
+      const authState = cacheService.getAuthState()
+      const cached = cacheService.getPrompts(authState)
+      const currentPrompt = cached?.find(p => p._id === promptId)
+      const newLikes = Math.max(0, (currentPrompt?.likes || 0) + likeChange)
+      
+      const updated = cacheService.updatePromptInCache(promptId, { 
+        likes: newLikes
+      })
+      
+      if (!updated) {
+        console.log('Cache update failed, using smart invalidation')
+        cacheService.smartInvalidate('like')
+      }
+      
       checkAfterPromptLike()
       return true
     } catch (error) {
@@ -101,6 +120,10 @@ export function usePromptInteractions(userId?: string) {
     try {
       await promptService.save(promptId)
       const wasSaved = savedPromptIds.has(promptId)
+      
+      // Update cache selectively for saves (saves count not typically cached, but good practice)
+      cacheService.smartInvalidate('save')
+      
       checkAfterPromptSave()
 
       setSavedPromptIds((prev) => {
