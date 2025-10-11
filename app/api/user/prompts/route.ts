@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import dbConnect from "@/lib/mongodb"
 import Prompt from "@/lib/models/Prompt"
 import { verifyToken } from "@/lib/auth"
+import { getHighestTier } from "@/lib/badges/get-highest-tier"
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,11 +21,26 @@ export async function GET(request: NextRequest) {
     }
 
     const prompts = await Prompt.find({ createdBy: decoded.userId })
-      .populate("createdBy", "name email")
+      .populate("createdBy", "name email badges")
       .sort({ createdAt: -1 })
 
+    // Add highest tier to each prompt's creator
+    const promptsWithTiers = prompts.map((prompt: any) => {
+      const promptObj = prompt.toObject()
+      if (promptObj.createdBy && promptObj.createdBy.badges) {
+        const highestTier = getHighestTier(promptObj.createdBy.badges)
+        promptObj.createdBy = {
+          _id: promptObj.createdBy._id,
+          name: promptObj.createdBy.name,
+          email: promptObj.createdBy.email,
+          highestTier
+        }
+      }
+      return promptObj
+    })
+
     return NextResponse.json({
-      prompts,
+      prompts: promptsWithTiers,
     })
   } catch (error) {
     console.error("Fetch user prompts error:", error)

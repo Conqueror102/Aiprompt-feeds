@@ -1,7 +1,6 @@
 // Component for prompt card header
 import { Star, Wrench, MoreHorizontal, Eye, Edit3, Share } from 'lucide-react'
 import Link from 'next/link'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,6 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import BadgedAvatar from '@/components/badges/BadgedAvatar'
+import { BadgeTier } from '@/types/badge'
 
 interface PromptCardHeaderProps {
   creatorName: string
@@ -21,6 +22,7 @@ interface PromptCardHeaderProps {
   category: string
   tools?: string[]
   technologies?: string[]
+  creatorHighestTier?: BadgeTier
   onViewDetails: () => void
   onShare: () => void
   onEdit: () => void
@@ -37,6 +39,7 @@ export default function PromptCardHeader({
   category,
   tools,
   technologies,
+  creatorHighestTier,
   onViewDetails,
   onShare,
   onEdit,
@@ -48,11 +51,12 @@ export default function PromptCardHeader({
   return (
     <div className="flex items-start justify-between">
       <Link href={`/user/${creatorId}`} className="flex items-center space-x-2 sm:space-x-3 hover:opacity-80 transition-opacity">
-        <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
-          <AvatarFallback className="bg-green-100 text-green-600 text-xs sm:text-sm">
-            {creatorName.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <BadgedAvatar 
+          userName={creatorName}
+          highestTier={creatorHighestTier}
+          size="sm"
+          showBadge={true}
+        />
         <div>
           <p className="text-xs sm:text-sm font-medium hover:underline">{creatorName}</p>
           <p className="text-xs text-muted-foreground">

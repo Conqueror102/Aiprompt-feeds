@@ -4,6 +4,7 @@ import dbConnect from "@/lib/mongodb"
 import Prompt from "@/lib/models/Prompt"
 import User from "@/lib/models/User"
 import { verifyToken } from "@/lib/auth"
+import { getHighestTier } from "@/lib/badges/get-highest-tier"
 
 export async function GET(request: NextRequest) {
   try {
@@ -62,20 +63,30 @@ export async function GET(request: NextRequest) {
     }
 
     const prompts = await Prompt.find(filter)
-      .populate("createdBy", "name email")
+      .populate("createdBy", "name email badges")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
 
-    // Debug: Log the first prompt to see what fields are available
-    if (prompts.length > 0) {
-      console.log("First prompt structure:", JSON.stringify(prompts[0], null, 2))
-    }
+    // Add highest tier to each prompt's creator
+    const promptsWithTiers = prompts.map((prompt: any) => {
+      const promptObj = prompt.toObject()
+      if (promptObj.createdBy && promptObj.createdBy.badges) {
+        const highestTier = getHighestTier(promptObj.createdBy.badges)
+        promptObj.createdBy = {
+          _id: promptObj.createdBy._id,
+          name: promptObj.createdBy.name,
+          email: promptObj.createdBy.email,
+          highestTier
+        }
+      }
+      return promptObj
+    })
 
     const total = await Prompt.countDocuments(filter)
 
-    return NextResponse.json({
-      prompts,
+    const response = NextResponse.json({
+      prompts: promptsWithTiers,
       pagination: {
         page,
         limit,
@@ -83,6 +94,11 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     })
+    
+    // Prevent caching to ensure fresh badge data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+    
+    return response
   } catch (error) {
     console.error("Fetch prompts error:", error)
     return NextResponse.json({ message: "Internal server error" }, { status: 500 })

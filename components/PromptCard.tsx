@@ -9,6 +9,7 @@ import { copyToClipboard, shareContent } from "@/utils/clipboard"
 import PromptCardHeader from "@/components/prompts/PromptCardHeader"
 import PromptCardActions from "@/components/prompts/PromptCardActions"
 import RunPromptDialog from "@/components/prompts/RunPromptDialog"
+import { BadgeTier } from "@/types/badge"
 
 interface PromptCardProps {
   prompt: {
@@ -21,6 +22,7 @@ interface PromptCardProps {
     createdBy: {
       _id: string
       name: string
+      highestTier?: BadgeTier
     }
     likes: number
     saves: number
@@ -283,6 +285,7 @@ export default function PromptCard({
           category={prompt.category}
           tools={prompt.tools}
           technologies={prompt.technologies}
+          creatorHighestTier={prompt.createdBy.highestTier}
           onViewDetails={() => onViewDetails?.(prompt._id)}
           onShare={handleShare}
           onEdit={handleEdit}

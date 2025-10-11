@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { UserIcon, Calendar, Bookmark, Edit, X, Users, MessageSquare, Heart } from "lucide-react"
+import { UserIcon, Calendar, Bookmark, Edit, X, Users, MessageSquare, Heart, Trophy } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -14,6 +14,10 @@ import { Label } from "@/components/ui/label"
 import PromptCard from "@/components/PromptCard"
 import Navbar from "@/components/Navbar"
 import { toast } from "@/hooks/use-toast"
+import SimpleBadgeDisplay from "@/components/badges/SimpleBadgeDisplay"
+import BadgedAvatar from "@/components/badges/BadgedAvatar"
+import { useBadges } from "@/hooks/use-badges"
+import { useHighestTier } from "@/hooks/use-highest-tier"
 
 interface User {
   id: string
@@ -67,6 +71,12 @@ export default function ProfilePage() {
   })
   const [updating, setUpdating] = useState(false)
   const [commentActivity, setCommentActivity] = useState<any | null>(null)
+  
+  const { badges, loading: badgesLoading, earnedCount, totalCount } = useBadges({
+    userId: user?.id,
+    autoCheck: false
+  })
+  const highestTier = useHighestTier(badges)
 
   useEffect(() => {
     fetchUserData()
@@ -233,12 +243,13 @@ export default function ProfilePage() {
         {/* Profile Header */}
         <Card className="mb-8">
           <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-              <Avatar className="h-24 w-24">
-                <AvatarFallback className="bg-green-100 text-green-600 text-2xl">
-                  {user.name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <BadgedAvatar 
+                userName={user.name}
+                highestTier={highestTier}
+                size="xl"
+                showBadge={true}
+              />
 
               <div className="flex-1">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -294,7 +305,7 @@ export default function ProfilePage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-5 max-w-4xl">
             <TabsTrigger value="posted" className="flex items-center gap-2">
               <UserIcon className="h-4 w-4" />
               Posted ({userPrompts.length})
@@ -302,6 +313,10 @@ export default function ProfilePage() {
             <TabsTrigger value="saved" className="flex items-center gap-2">
               <Bookmark className="h-4 w-4" />
               Saved ({savedPrompts.length})
+            </TabsTrigger>
+            <TabsTrigger value="badges" className="flex items-center gap-2">
+              <Trophy className="h-4 w-4" />
+              Badges ({earnedCount})
             </TabsTrigger>
             <TabsTrigger value="followers" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
@@ -394,6 +409,33 @@ export default function ProfilePage() {
                   />
                 ))}
               </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="badges" className="mt-6">
+            {badgesLoading ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                  <p className="text-gray-600 dark:text-gray-400 mt-4">Loading badges...</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-yellow-600" />
+                      Your Badges
+                      <span className="text-sm font-normal text-gray-500 dark:text-gray-400">({earnedCount} earned)</span>
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Hover over badges to see details
+                    </p>
+                  </div>
+                  <SimpleBadgeDisplay badges={badges} />
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
 

@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { UserCircle, Calendar, Heart, FileText, Users, UserPlus, UserMinus, UserCheck } from 'lucide-react'
+import { UserCircle, Calendar, Heart, FileText, Users, UserPlus, UserMinus, UserCheck, Trophy } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useUserProfile } from '@/hooks/use-user-profile'
 import { useFollow } from '@/hooks/use-follow'
 import { usePromptInteractions } from '@/hooks/use-prompt-interactions'
+import { useBadges } from '@/hooks/use-badges'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import PromptGrid from '@/components/prompts/PromptGrid'
+import SimpleBadgeDisplay from '@/components/badges/SimpleBadgeDisplay'
+import BadgedAvatar from '@/components/badges/BadgedAvatar'
+import { useHighestTier } from '@/hooks/use-highest-tier'
 import { UserProfile } from '@/types'
 
 export default function UserProfilePage() {
@@ -25,6 +29,11 @@ export default function UserProfilePage() {
   const { profile, prompts, loading, refreshProfile, setProfile } = useUserProfile(userId)
   const { toggleFollow, loading: followLoading } = useFollow()
   const { likedPromptIds, savedPromptIds, toggleLike, toggleSave } = usePromptInteractions(user?.id)
+  const { badges, loading: badgesLoading, earnedCount, totalCount } = useBadges({
+    userId: userId,
+    autoCheck: false
+  })
+  const highestTier = useHighestTier(badges)
   
   const [showFollowersDialog, setShowFollowersDialog] = useState(false)
   const [showFollowingDialog, setShowFollowingDialog] = useState(false)
@@ -141,11 +150,12 @@ export default function UserProfilePage() {
         <Card className="mb-8">
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-              <Avatar className="h-24 w-24">
-                <AvatarFallback className="bg-green-100 text-green-600 text-3xl">
-                  {profile.name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <BadgedAvatar 
+                userName={profile.name}
+                highestTier={highestTier}
+                size="xl"
+                showBadge={true}
+              />
 
               <div className="flex-1">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -227,8 +237,12 @@ export default function UserProfilePage() {
 
         {/* Tabs */}
         <Tabs defaultValue="prompts" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsList className="grid w-full grid-cols-3 max-w-lg">
             <TabsTrigger value="prompts">Prompts</TabsTrigger>
+            <TabsTrigger value="badges">
+              <Trophy className="h-4 w-4 mr-2" />
+              Badges ({earnedCount})
+            </TabsTrigger>
             <TabsTrigger value="liked">Liked</TabsTrigger>
           </TabsList>
 
@@ -258,6 +272,33 @@ export default function UserProfilePage() {
                 onSave={toggleSave}
                 onViewDetails={handleViewDetails}
               />
+            )}
+          </TabsContent>
+
+          <TabsContent value="badges" className="mt-6">
+            {badgesLoading ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                  <p className="text-gray-600 dark:text-gray-400 mt-4">Loading badges...</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-yellow-600" />
+                      {isOwnProfile ? 'Your Badges' : `${profile.name}'s Badges`}
+                      <span className="text-sm font-normal text-gray-500 dark:text-gray-400">({earnedCount} earned)</span>
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      Hover over badges to see details
+                    </p>
+                  </div>
+                  <SimpleBadgeDisplay badges={badges} />
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
 
