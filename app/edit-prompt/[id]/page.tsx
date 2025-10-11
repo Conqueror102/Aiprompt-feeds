@@ -95,6 +95,7 @@ export default function EditPromptPage() {
   const [saving, setSaving] = useState(false)
   const [showPlaceholder, setShowPlaceholder] = useState(true)
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set())
+  const [clipboardNotice, setClipboardNotice] = useState<string>("")
   
   // Form data for owners
   const [formData, setFormData] = useState({
@@ -259,23 +260,53 @@ export default function EditPromptPage() {
     }
   }
 
-  const handleStartChat = () => {
+  const handleAgentChange = async (agent: string) => {
+    setSelectedAgent(agent)
+
+    // Check if this agent needs clipboard
+    const { mapAgentNameToKey } = await import("@/lib/launch-agent")
+    const AI_MODELS_CONFIG = (await import("@/lib/ai-models-config")).default
+
+    const key = mapAgentNameToKey(agent)
+    const cfg = key ? AI_MODELS_CONFIG[key] : null
+
+    if (cfg && (cfg.type === "clipboard" || cfg.type === "clipboard-special")) {
+      setClipboardNotice(cfg.instruction || "Prompt will be copied to clipboard when you click Run")
+    } else {
+      setClipboardNotice("")
+    }
+  }
+
+  const handleRunWithAI = async () => {
     if (!selectedAgent) {
       toast({
-        title: "Select AI Agent",
-        description: "Please select an AI agent to start chatting",
+        title: "Select an AI Agent",
+        description: "Please select an AI agent to run this prompt",
         variant: "destructive",
       })
       return
     }
 
-    // Store chat data in localStorage for the full screen page
-    localStorage.setItem("chatData", JSON.stringify({
-      agent: selectedAgent,
-      messages: [],
-      initialPrompt: editedContent
-    }))
-    window.open("/chat", "_blank")
+    // Convert HTML content back to plain text for AI agents
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = editedContent
+    const plainTextContent = tempDiv.textContent || tempDiv.innerText || ''
+
+    const { launchExternalAgent } = await import("@/lib/launch-agent")
+    const result = await launchExternalAgent(selectedAgent, plainTextContent)
+
+    if (result.success) {
+      toast({
+        title: result.needsClipboard ? "Prompt Copied!" : "Success",
+        description: result.message,
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: result.message || "Failed to launch AI agent",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleAgentToggle = (agent: string) => {
@@ -479,30 +510,37 @@ export default function EditPromptPage() {
             
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               {!isOwner && (
-                <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-                  <SelectTrigger className="w-full sm:w-48 border-green-200 dark:border-green-700 text-xs sm:text-sm">
-                    <SelectValue placeholder="Select AI Agent" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AI_AGENTS.map((agent) => (
-                      <SelectItem key={agent} value={agent}>
-                        {agent}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-col gap-2 flex-1">
+                  <Select value={selectedAgent} onValueChange={handleAgentChange}>
+                    <SelectTrigger className="w-full sm:w-48 border-green-200 dark:border-green-700 text-xs sm:text-sm">
+                      <SelectValue placeholder="Select AI Agent" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AI_AGENTS.map((agent) => (
+                        <SelectItem key={agent} value={agent}>
+                          {agent}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {clipboardNotice && (
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-2 text-xs text-blue-700 dark:text-blue-300">
+                      ℹ️ {clipboardNotice}
+                    </div>
+                  )}
+                </div>
               )}
               
               <div className="flex gap-2 sm:gap-3">
                 {!isOwner && (
                   <Button
-                    onClick={handleStartChat}
+                    onClick={handleRunWithAI}
                     disabled={!selectedAgent}
                     className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none text-xs sm:text-sm h-10 sm:h-11"
                   >
                     <Play className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                    <span className="hidden sm:inline">Start Chat</span>
-                    <span className="sm:hidden">Chat</span>
+                    <span className="hidden sm:inline">Run with AI</span>
+                    <span className="sm:hidden">Run</span>
                   </Button>
                 )}
                 
@@ -858,36 +896,7 @@ export default function EditPromptPage() {
           </div>
         ) : (
           // Non-owner editing - simple editor
-          <div className="space-y-4 sm:space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-2 truncate">Edit Prompt</h1>
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 dark:text-gray-400">
-                  This is a temporary editing environment. Your changes won't be saved to the original prompt.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
-                <Button
-                  onClick={handleCopy}
-                  variant="outline"
-                  className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/20 text-xs sm:text-sm h-10 sm:h-11"
-                >
-                  <Copy className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Copy Edited</span>
-                  <span className="sm:hidden">Copy</span>
-                </Button>
-                {/* <Button
-                  onClick={handleStartChat}
-                  className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm h-10 sm:h-11"
-                >
-                  <Send className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Start Chat</span>
-                  <span className="sm:hidden">Chat</span>
-                </Button> */}
-              </div>
-            </div>
-
-            <Card className="min-h-[50vh] sm:min-h-[60vh] lg:min-h-[80vh]">
+          <Card className="min-h-[50vh] sm:min-h-[60vh] lg:min-h-[80vh]">
               <CardHeader className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -929,7 +938,6 @@ export default function EditPromptPage() {
                 </div>
               </CardContent>
             </Card>
-          </div>
         )}
       </div>
     </div>
