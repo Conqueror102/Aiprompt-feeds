@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import NextImage from "next/image"
 import { useRouter } from "next/navigation"
 import { User, Plus, LogOut, Settings, BookmarkIcon, Moon, Sun, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -77,8 +78,18 @@ export default function Navbar({ user, onSidebarToggle, isSidebarOpen }: NavbarP
                 <Menu className="h-5 w-5" />
               </button>
             )}
-            <Link href="/" className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-              AI<span className="text-green-600">Prompts</span>
+            <Link href="/" className="flex items-center ">
+              <NextImage 
+                src="/logoAI.png" 
+                alt="AI Prompts Logo" 
+                width={60} 
+                height={40}
+                className="object-contain"
+                priority
+              />
+              <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white hidden sm:inline">
+                AI<span className="text-green-600">Prompts</span>
+              </span>
             </Link>
             <div className="hidden md:flex space-x-6">
               <Link href="/" className="text-gray-700 dark:text-gray-300 hover:text-green-600 transition-colors">

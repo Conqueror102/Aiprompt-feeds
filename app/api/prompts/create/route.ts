@@ -4,6 +4,7 @@ import Prompt from "@/lib/models/Prompt"
 import { BadgeService } from "@/services/badge-service"
 import User from "@/lib/models/User"
 import { verifyToken } from "@/lib/auth"
+import { generateSlug } from "@/lib/utils"
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,6 +33,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
     }
 
+    // Generate SEO-friendly slug
+    let slug = generateSlug(title)
+    
+    // Check if slug already exists and make it unique
+    const existingPrompt = await Prompt.findOne({ slug })
+    if (existingPrompt) {
+      const randomSuffix = Math.random().toString(36).substring(2, 8)
+      slug = `${slug}-${randomSuffix}`
+    }
+
     const prompt = await Prompt.create({
       title,
       content,
@@ -42,6 +53,7 @@ export async function POST(request: NextRequest) {
       tools: tools || [],
       private: !!isPrivate,
       createdBy: user._id,
+      slug, // Add SEO-friendly slug
     })
 
     const populatedPrompt = await Prompt.findById(prompt._id).populate("createdBy", "name email")

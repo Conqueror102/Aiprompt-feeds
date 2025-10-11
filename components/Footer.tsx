@@ -1,4 +1,5 @@
 import Link from "next/link"
+import NextImage from "next/image"
 import { Heart } from "lucide-react"
 
 export default function Footer() {
@@ -7,8 +8,17 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
-            <Link href="/" className="text-2xl font-bold text-gray-900 dark:text-white">
-              AI<span className="text-green-600">Prompts</span>
+            <Link href="/" className="flex items-center ">
+              <NextImage 
+                src="/logoAI.png" 
+                alt="AI Prompts Logo" 
+                width={60} 
+                height={40}
+                className="object-contain"
+              />
+              <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                AI<span className="text-green-600">Prompts</span>
+              </span>
             </Link>
             <p className="mt-4 text-gray-600 dark:text-gray-400 max-w-md">
               Discover, share, and save the best AI prompts for ChatGPT, Gemini, Stable Diffusion, and more. Join our

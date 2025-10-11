@@ -65,6 +65,58 @@ const PromptSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    // SEO-friendly URL slug
+    slug: {
+      type: String,
+      unique: true,
+      sparse: true, // Allows null values to be non-unique
+      index: true,
+    },
+    // Detailed description for SEO (300+ words recommended)
+    detailedDescription: {
+      type: String,
+      default: "",
+    },
+    // Use cases for the prompt
+    useCases: {
+      type: [String],
+      default: [],
+    },
+    // How to use instructions
+    howToUse: {
+      type: String,
+      default: "",
+    },
+    // Tips for best results
+    tips: {
+      type: [String],
+      default: [],
+    },
+    // Example inputs/outputs
+    examples: [{
+      input: String,
+      output: String,
+    }],
+    // SEO metadata
+    seo: {
+      metaTitle: String,
+      metaDescription: String,
+      keywords: [String],
+      ogImage: String,
+      canonicalUrl: String,
+    },
+    // Analytics tracking
+    analytics: {
+      views: { type: Number, default: 0 },
+      uniqueViews: { type: Number, default: 0 },
+      shares: { type: Number, default: 0 },
+      lastViewed: Date,
+    },
+    // Search engine indexing
+    isIndexable: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,
@@ -79,5 +131,6 @@ PromptSchema.index({ category: 1, createdAt: -1 }) // For category filtering
 PromptSchema.index({ aiAgents: 1, createdAt: -1 }) // For agent filtering
 PromptSchema.index({ createdBy: 1, createdAt: -1 }) // For user prompts
 PromptSchema.index({ isApproved: 1, private: 1 }) // For filtering approved/public prompts
+PromptSchema.index({ slug: 1 }) // For slug-based queries
 
 export default mongoose.models.Prompt || mongoose.model("Prompt", PromptSchema)
