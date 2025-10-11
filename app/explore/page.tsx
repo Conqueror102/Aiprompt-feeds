@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { TrendingUp, Clock, Heart, Users, Trophy, Award, Sparkles, Info, Target, BookOpen } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -42,114 +42,161 @@ interface User {
 
 export default function ExplorePage() {
   const [user, setUser] = useState<User | null>(null)
-  const [trendingPrompts, setTrendingPrompts] = useState<Prompt[]>([])
-  const [recentPrompts, setRecentPrompts] = useState<Prompt[]>([])
-  const [popularPrompts, setPopularPrompts] = useState<Prompt[]>([])
+  const [allPrompts, setAllPrompts] = useState<Prompt[]>([])
   const [userPrompts, setUserPrompts] = useState<Prompt[]>([])
   const [savedPrompts, setSavedPrompts] = useState<Prompt[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null)
   const [totalPromptsOnPlatform, setTotalPromptsOnPlatform] = useState(0)
+  const [showBadges, setShowBadges] = useState(false)
   
   const { badges, loading: badgesLoading, earnedCount, totalCount } = useBadges({
     userId: user?.id,
     autoCheck: false
   })
 
+  // Memoize sorted prompts to avoid recalculating on every render
+  const trendingPrompts = useMemo(() => {
+    return [...allPrompts]
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, 6)
+  }, [allPrompts])
+
+  const popularPrompts = useMemo(() => {
+    return [...allPrompts]
+      .sort((a, b) => (b.likes || 0) - (a.likes || 0))
+      .slice(0, 6)
+  }, [allPrompts])
+
+  const recentPrompts = useMemo(() => {
+    return [...allPrompts]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 6)
+  }, [allPrompts])
+
+  // Calculate total likes from user prompts
+  const totalLikes = useMemo(() => {
+    return userPrompts.reduce((sum, prompt) => sum + prompt.likes, 0)
+  }, [userPrompts])
+
   const handlePromptRated = (promptId: string, newRating: number) => {
-    setTrendingPrompts((prev) => prev.map((p) => p._id === promptId ? { ...p, rating: newRating } : p))
-    setPopularPrompts((prev) => prev.map((p) => p._id === promptId ? { ...p, rating: newRating } : p))
-    setRecentPrompts((prev) => prev.map((p) => p._id === promptId ? { ...p, rating: newRating } : p))
+    // Update the prompt in allPrompts array
+    setAllPrompts((prev) => prev.map((p) => p._id === promptId ? { ...p, rating: newRating } : p))
+    
     if (selectedPrompt && selectedPrompt._id === promptId) {
       setSelectedPrompt({ ...selectedPrompt, rating: newRating })
     }
   }
 
   useEffect(() => {
-    fetchUser()
+    fetchInitialData()
   }, [])
 
+  // Lazy load badges when user scrolls to badge section
   useEffect(() => {
-    if (user) {
-      fetchPrompts()
-      fetchUserData()
-    }
-  }, [user])
+    if (!showBadges) return
+    // Badge data will be fetched by useBadges hook when showBadges is true
+  }, [showBadges])
 
-  const fetchUser = async () => {
+  const fetchInitialData = async () => {
     const token = localStorage.getItem("token")
-    if (!token) return
-
+    
     try {
-      const response = await fetch("/api/auth/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      setLoading(true)
+      
+      // Parallel fetch for better performance
+      const requests: Promise<any>[] = [
+        // Always fetch public prompts (limited to 20 for initial load)
+        fetch("/api/prompts?limit=20").then(res => res.ok ? res.json() : null)
+      ]
 
-      if (response.ok) {
-        const userData = await response.json()
-        setUser(userData)
+      // Add authenticated requests if token exists
+      if (token) {
+        requests.push(
+          fetch("/api/auth/me", {
+            headers: { Authorization: `Bearer ${token}` }
+          }).then(res => res.ok ? res.json() : null),
+          fetch("/api/user/prompts", {
+            headers: { Authorization: `Bearer ${token}` }
+          }).then(res => res.ok ? res.json() : null),
+          fetch("/api/user/saved-prompts", {
+            headers: { Authorization: `Bearer ${token}` }
+          }).then(res => res.ok ? res.json() : null)
+        )
+      }
+
+      const results = await Promise.all(requests)
+      
+      // Process results
+      const promptsData = results[0]
+      if (promptsData?.prompts) {
+        setAllPrompts(promptsData.prompts)
+        setTotalPromptsOnPlatform(promptsData.pagination?.total || promptsData.prompts.length)
+      }
+
+      if (token && results.length > 1) {
+        const userData = results[1]
+        const userPromptsData = results[2]
+        const savedPromptsData = results[3]
+
+        if (userData) setUser(userData)
+        if (userPromptsData?.prompts) setUserPrompts(userPromptsData.prompts)
+        if (savedPromptsData?.prompts) setSavedPrompts(savedPromptsData.prompts)
       }
     } catch (error) {
-      console.error("Failed to fetch user:", error)
-    }
-  }
-
-  const fetchPrompts = async () => {
-    try {
-      const response = await fetch("/api/prompts")
-      if (response.ok) {
-        const data = await response.json()
-        const prompts = data.prompts
-        setTotalPromptsOnPlatform(prompts.length)
-
-        // Sort prompts for different categories
-        setRecentPrompts([...prompts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 6))
-        setPopularPrompts([...prompts].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 6))
-        setTrendingPrompts([...prompts].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 6))
-      }
-    } catch (error) {
-      console.error("Failed to fetch prompts:", error)
+      console.error("Failed to fetch initial data:", error)
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchUserData = async () => {
-    const token = localStorage.getItem("token")
-    if (!token || !user) return
-
-    try {
-      // Fetch user's prompts
-      const promptsResponse = await fetch("/api/user/prompts", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (promptsResponse.ok) {
-        const promptsData = await promptsResponse.json()
-        setUserPrompts(promptsData.prompts)
-      }
-
-      // Fetch saved prompts
-      const savedResponse = await fetch("/api/user/saved-prompts", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (savedResponse.ok) {
-        const savedData = await savedResponse.json()
-        setSavedPrompts(savedData.prompts)
-      }
-    } catch (error) {
-      console.error("Failed to fetch user data:", error)
-    }
-  }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
         <Navbar user={user} />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
-        </div>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header Skeleton */}
+          <div className="mb-8">
+            <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-64 mb-2 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-96 animate-pulse"></div>
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-24 animate-pulse"></div>
+                  <div className="h-4 w-4 bg-gray-200 dark:bg-gray-800 rounded animate-pulse"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-16 mb-2 animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-32 animate-pulse"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Prompts Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Card key={i} className="w-full">
+                <CardHeader className="pb-3">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4 mb-2 animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-1/2 animate-pulse"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-24 bg-gray-200 dark:bg-gray-800 rounded mb-3 animate-pulse"></div>
+                  <div className="flex gap-2">
+                    <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-16 animate-pulse"></div>
+                    <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-20 animate-pulse"></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </main>
       </div>
     )
   }
@@ -187,9 +234,7 @@ export default function ExplorePage() {
               <Heart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {userPrompts.reduce((sum, prompt) => sum + prompt.likes, 0)}
-              </div>
+              <div className="text-2xl font-bold">{totalLikes}</div>
               <p className="text-xs text-muted-foreground">Likes on your prompts</p>
             </CardContent>
           </Card>
@@ -298,7 +343,7 @@ export default function ExplorePage() {
         </Card>
 
         {/* Badge System Information */}
-        <Card className="mb-8">
+        <Card className="mb-8" onMouseEnter={() => setShowBadges(true)}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trophy className="h-5 w-5" />
@@ -856,7 +901,7 @@ export default function ExplorePage() {
         </Card>
 
         {/* User's Earned Badges */}
-        {!badgesLoading && badges.length > 0 && (
+        {showBadges && !badgesLoading && badges.length > 0 && (
           <div className="mb-8">
             <BadgeCollection 
               badges={badges} 

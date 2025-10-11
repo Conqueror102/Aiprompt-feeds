@@ -71,5 +71,13 @@ const PromptSchema = new mongoose.Schema(
   },
 )
 
+// Add indexes for better query performance
+PromptSchema.index({ createdAt: -1 }) // For recent prompts
+PromptSchema.index({ rating: -1 }) // For popular/trending prompts
+PromptSchema.index({ likes: -1 }) // For most liked prompts
+PromptSchema.index({ category: 1, createdAt: -1 }) // For category filtering
+PromptSchema.index({ aiAgents: 1, createdAt: -1 }) // For agent filtering
+PromptSchema.index({ createdBy: 1, createdAt: -1 }) // For user prompts
+PromptSchema.index({ isApproved: 1, private: 1 }) // For filtering approved/public prompts
 
 export default mongoose.models.Prompt || mongoose.model("Prompt", PromptSchema)

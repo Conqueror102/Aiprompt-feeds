@@ -63,24 +63,25 @@ export async function GET(request: NextRequest) {
     }
 
     const prompts = await Prompt.find(filter)
+      .select('title content description aiAgents category createdBy likes saves createdAt rating private tools technologies commentCount')
       .populate("createdBy", "name email badges")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
+      .lean() // Convert to plain JavaScript objects for better performance
 
     // Add highest tier to each prompt's creator
     const promptsWithTiers = prompts.map((prompt: any) => {
-      const promptObj = prompt.toObject()
-      if (promptObj.createdBy && promptObj.createdBy.badges) {
-        const highestTier = getHighestTier(promptObj.createdBy.badges)
-        promptObj.createdBy = {
-          _id: promptObj.createdBy._id,
-          name: promptObj.createdBy.name,
-          email: promptObj.createdBy.email,
+      if (prompt.createdBy && prompt.createdBy.badges) {
+        const highestTier = getHighestTier(prompt.createdBy.badges)
+        prompt.createdBy = {
+          _id: prompt.createdBy._id,
+          name: prompt.createdBy.name,
+          email: prompt.createdBy.email,
           highestTier
         }
       }
-      return promptObj
+      return prompt
     })
 
     const total = await Prompt.countDocuments(filter)
