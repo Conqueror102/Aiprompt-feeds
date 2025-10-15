@@ -166,3 +166,78 @@ button:active {
 .glitch {
   animation: glitch 1s linear infinite;
 }
+
+/* Mobile viewport and keyboard handling */
+@supports (padding: max(0px)) {
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Mobile keyboard viewport fixes */
+@media (max-width: 768px) {
+  /* Prevent zoom on input focus */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Ensure proper viewport handling */
+  .mobile-modal {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height */
+    max-height: 100vh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* Handle keyboard appearance */
+  .keyboard-aware {
+    transition: height 0.3s ease;
+  }
+
+  /* Scrollable content area */
+  .mobile-scroll-area {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Fixed input area */
+  .mobile-input-fixed {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+  }
+}
+
+/* Visual Viewport API support */
+@supports (height: 100dvh) {
+  .mobile-modal {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+}
+
+/* Auto-expanding textarea */
+.auto-expand-textarea {
+  field-sizing: content;
+  resize: none;
+  overflow: hidden;
+  transition: height 0.1s ease;
+}
+
+/* Rounded input styling */
+.rounded-input {
+  border-radius: 9999px;
+  padding-left: 1rem;
+  padding-right: 3rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  min-height: 2.5rem;
+  max-height: 7.5rem;
+  line-height: 1.5;
+}

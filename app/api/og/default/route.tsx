@@ -9,6 +9,10 @@ export async function GET(request: NextRequest) {
     const title = searchParams.get('title') || 'AI Prompt Hub'
     const description = searchParams.get('description') || 'Discover and share AI prompts for ChatGPT, Gemini, and more'
 
+    // Get the base URL for logo
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const logoUrl = `${baseUrl}/logoAI.png`
+
     return new ImageResponse(
       (
         <div
@@ -56,23 +60,16 @@ export async function GET(request: NextRequest) {
                 marginBottom: '40px',
               }}
             >
-              <div
+              <img
+                src={logoUrl}
+                alt="AI Prompt Hub Logo"
                 style={{
                   width: '80px',
                   height: '80px',
-                  background: 'white',
                   borderRadius: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '36px',
-                  fontWeight: 'bold',
-                  color: '#10b981',
                   boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
                 }}
-              >
-                AI
-              </div>
+              />
               <div
                 style={{
                   color: 'white',

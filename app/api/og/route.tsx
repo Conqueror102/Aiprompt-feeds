@@ -11,6 +11,10 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || ''
     const author = searchParams.get('author') || ''
 
+    // Get the base URL for logo
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const logoUrl = `${baseUrl}/logoAI.png`
+
     return new ImageResponse(
       (
         <div
@@ -37,22 +41,15 @@ export async function GET(request: NextRequest) {
               gap: '16px',
             }}
           >
-            <div
+            <img
+              src={logoUrl}
+              alt="AI Prompt Hub Logo"
               style={{
                 width: '48px',
                 height: '48px',
-                background: 'white',
                 borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '24px',
-                fontWeight: 'bold',
-                color: '#10b981',
               }}
-            >
-              AI
-            </div>
+            />
             <div
               style={{
                 color: 'white',

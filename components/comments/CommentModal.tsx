@@ -45,44 +45,84 @@ export default function CommentModal({
     userId: currentUserId,
   })
 
-  // Handle mobile keyboard
+  // Handle mobile keyboard and viewport
   useEffect(() => {
     if (!isOpen || !isMobile) return
 
-    const handleResize = () => {
-      if (textareaRef.current && document.activeElement === textareaRef.current) {
-        // Scroll the input into view when keyboard appears
-        setTimeout(() => {
-          textareaRef.current?.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
-          })
-        }, 100)
+    // Store original viewport height
+    const originalViewportHeight = window.visualViewport?.height || window.innerHeight
+    
+    const handleViewportChange = () => {
+      if (window.visualViewport) {
+        const currentHeight = window.visualViewport.height
+        const heightDifference = originalViewportHeight - currentHeight
+        
+        // If keyboard is open (significant height reduction)
+        if (heightDifference > 150) {
+          document.body.style.setProperty('--keyboard-height', `${heightDifference}px`)
+          if (modalRef.current) {
+            modalRef.current.style.height = `${currentHeight}px`
+            modalRef.current.style.maxHeight = `${currentHeight}px`
+          }
+        } else {
+          // Keyboard is closed
+          document.body.style.removeProperty('--keyboard-height')
+          if (modalRef.current) {
+            modalRef.current.style.height = '100vh'
+            modalRef.current.style.maxHeight = '100vh'
+          }
+        }
       }
     }
 
     const handleFocus = () => {
-      // Add padding to bottom when keyboard is likely to appear
-      if (modalRef.current) {
-        modalRef.current.style.paddingBottom = '20vh'
-      }
+      // Ensure input stays visible when focused
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'end',
+            inline: 'nearest'
+          })
+        }
+      }, 300) // Wait for keyboard animation
     }
 
     const handleBlur = () => {
-      // Remove padding when keyboard disappears
-      if (modalRef.current) {
-        modalRef.current.style.paddingBottom = '0'
-      }
+      // Reset when input loses focus
+      setTimeout(() => {
+        if (modalRef.current) {
+          modalRef.current.style.height = '100vh'
+          modalRef.current.style.maxHeight = '100vh'
+        }
+      }, 100)
     }
 
-    window.addEventListener('resize', handleResize)
+    // Use visualViewport API if available, fallback to resize
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportChange)
+    } else {
+      window.addEventListener('resize', handleViewportChange)
+    }
+    
     textareaRef.current?.addEventListener('focus', handleFocus)
     textareaRef.current?.addEventListener('blur', handleBlur)
 
     return () => {
-      window.removeEventListener('resize', handleResize)
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleViewportChange)
+      } else {
+        window.removeEventListener('resize', handleViewportChange)
+      }
       textareaRef.current?.removeEventListener('focus', handleFocus)
       textareaRef.current?.removeEventListener('blur', handleBlur)
+      
+      // Cleanup styles
+      document.body.style.removeProperty('--keyboard-height')
+      if (modalRef.current) {
+        modalRef.current.style.height = ''
+        modalRef.current.style.maxHeight = ''
+      }
     }
   }, [isOpen, isMobile])
 
@@ -100,6 +140,11 @@ export default function CommentModal({
     try {
       await createComment(newComment.trim())
       setNewComment("")
+      // Reset textarea height
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto'
+        textareaRef.current.style.height = '40px'
+      }
       // Keep focus on input for easy follow-up comments
       if (!isMobile) {
         textareaRef.current?.focus()
@@ -107,6 +152,17 @@ export default function CommentModal({
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Handle textarea auto-expansion
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNewComment(e.target.value)
+    
+    // Auto-expand textarea
+    const textarea = e.target
+    textarea.style.height = 'auto'
+    const newHeight = Math.min(Math.max(textarea.scrollHeight, 40), 120)
+    textarea.style.height = newHeight + 'px'
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -140,7 +196,7 @@ export default function CommentModal({
   const modalContent = (
     <div 
       ref={modalRef}
-      className={`flex flex-col h-full ${isMobile ? 'h-screen' : 'max-h-[80vh]'}`}
+      className={`flex flex-col ${isMobile ? 'mobile-modal keyboard-aware' : 'h-full max-h-[80vh]'} relative`}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-white dark:bg-gray-900 flex-shrink-0">
@@ -156,10 +212,7 @@ export default function CommentModal({
             </Button>
           )}
           <MessageCircle className="h-5 w-5 text-gray-600" />
-          <div>
-            <h2 className="font-semibold text-lg">Comments</h2>
-            <p className="text-sm text-gray-500">{total} comments</p>
-          </div>
+          <h2 className="font-semibold text-lg">Comments</h2>
         </div>
         {!isMobile && (
           <Button
@@ -188,18 +241,13 @@ export default function CommentModal({
                 {prompt.category}
               </Badge>
             </div>
-            <h3 className="font-semibold text-sm mb-2 line-clamp-2">{prompt.title}</h3>
-            {prompt.description && (
-              <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                {prompt.description}
-              </p>
-            )}
+            <h3 className="font-semibold text-sm line-clamp-2">{prompt.title}</h3>
           </div>
         </div>
       </div>
 
       {/* Comments List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+      <div className={`flex-1 p-4 space-y-4 min-h-0 ${isMobile ? 'mobile-scroll-area pb-safe' : 'overflow-y-auto'}`}>
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
@@ -226,45 +274,45 @@ export default function CommentModal({
       </div>
 
       {/* Comment Input - Fixed at bottom */}
-      <div className="border-t bg-white dark:bg-gray-900 p-4 flex-shrink-0">
+      <div className={`border-t bg-white dark:bg-gray-900 p-4 flex-shrink-0 ${isMobile ? 'mobile-input-fixed pb-safe' : ''}`}>
         {currentUserId ? (
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-end">
             <Avatar className="h-8 w-8 flex-shrink-0">
               <AvatarFallback className="text-xs">
                 {/* You'd get this from user context */}
                 U
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 space-y-3">
-              <Textarea
-                ref={textareaRef}
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Add a comment..."
-                className="min-h-[80px] resize-none border-gray-200 focus:border-green-500 focus:ring-green-500"
-                disabled={isSubmitting}
-              />
-              <div className="flex justify-between items-center">
-                <p className="text-xs text-gray-500">
-                  {isMobile ? 'Tap' : 'Press Enter'} to post
-                </p>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!newComment.trim() || isSubmitting}
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {isSubmitting ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-1" />
-                      Post
-                    </>
-                  )}
-                </Button>
+            <div className="flex-1 flex gap-2 items-end">
+              <div className="flex-1 relative">
+                <Textarea
+                  ref={textareaRef}
+                  value={newComment}
+                  onChange={handleTextareaChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Add a comment..."
+                  className="min-h-[40px] max-h-[120px] resize-none rounded-full px-4 py-2 border-gray-200 focus:border-green-500 focus:ring-green-500 overflow-hidden"
+                  disabled={isSubmitting}
+                  rows={1}
+                  style={{
+                    height: '40px',
+                    minHeight: '40px',
+                    maxHeight: '120px'
+                  }}
+                />
               </div>
+              <Button
+                onClick={handleSubmit}
+                disabled={!newComment.trim() || isSubmitting}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 rounded-full h-10 w-10 p-0 flex-shrink-0"
+              >
+                {isSubmitting ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
             </div>
           </div>
         ) : (
@@ -280,10 +328,10 @@ export default function CommentModal({
   )
 
   if (isMobile) {
-    // Full-screen modal on mobile
+    // Full-screen modal on mobile with proper viewport handling
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="p-0 m-0 max-w-none w-full h-full rounded-none border-0">
+        <DialogContent className="p-0 m-0 max-w-none w-full mobile-modal rounded-none border-0">
           {modalContent}
         </DialogContent>
       </Dialog>

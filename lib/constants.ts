@@ -11,6 +11,8 @@ export const AI_AGENTS = [
   "Midjourney",
   "Sora",
   "Runway",
+  "Leonard",
+  "Veo",
   "Perplexity",
   "GitHub Copilot",
   "Others/Any"

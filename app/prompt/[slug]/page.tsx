@@ -52,10 +52,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     prompt.technologies
   )
 
-  // Generate dynamic OG image URL
+  // Generate dynamic OG image URL with fallback
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-  const ogImageUrl = prompt.seo?.ogImage || 
-    `${baseUrl}/api/og?title=${encodeURIComponent(prompt.title)}&description=${encodeURIComponent(metaDescription)}&category=${encodeURIComponent(prompt.category)}&author=${encodeURIComponent(prompt.createdBy.name)}`
+  const dynamicOgUrl = `${baseUrl}/api/og?title=${encodeURIComponent(prompt.title)}&description=${encodeURIComponent(metaDescription)}&category=${encodeURIComponent(prompt.category)}&author=${encodeURIComponent(prompt.createdBy.name)}`
+  const fallbackOgUrl = `${baseUrl}/logoBG.png`
+  const ogImageUrl = prompt.seo?.ogImage || dynamicOgUrl
 
   return {
     title: metaTitle,
@@ -86,6 +87,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
           width: 1200,
           height: 630,
           alt: prompt.title,
+        },
+        {
+          url: fallbackOgUrl,
+          width: 1200,
+          height: 630,
+          alt: 'AI Prompt Hub',
         }
       ],
     },
