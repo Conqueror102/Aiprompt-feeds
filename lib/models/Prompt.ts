@@ -70,7 +70,6 @@ const PromptSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true, // Allows null values to be non-unique
-      index: true,
     },
     // Detailed description for SEO (300+ words recommended)
     detailedDescription: {
@@ -131,6 +130,6 @@ PromptSchema.index({ category: 1, createdAt: -1 }) // For category filtering
 PromptSchema.index({ aiAgents: 1, createdAt: -1 }) // For agent filtering
 PromptSchema.index({ createdBy: 1, createdAt: -1 }) // For user prompts
 PromptSchema.index({ isApproved: 1, private: 1 }) // For filtering approved/public prompts
-PromptSchema.index({ slug: 1 }) // For slug-based queries
+// Note: slug index is auto-created by unique: true
 
 export default mongoose.models.Prompt || mongoose.model("Prompt", PromptSchema)

@@ -5,6 +5,7 @@ import { BadgeService } from "@/services/badge-service"
 import User from "@/lib/models/User"
 import { verifyToken } from "@/lib/auth"
 import { generateSlug } from "@/lib/utils"
+import { triggerBadgesAfterPromptCreate } from "@/lib/badges/badge-triggers"
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,12 +59,19 @@ export async function POST(request: NextRequest) {
 
     const populatedPrompt = await Prompt.findById(prompt._id).populate("createdBy", "name email")
 
-    // Trigger badge check asynchronously (non-blocking)
-    BadgeService.checkUserBadges(decoded.userId).catch(() => { })
+    // Trigger badge check and get newly earned badges
+    const newBadges = await triggerBadgesAfterPromptCreate(decoded.userId, {
+      category,
+      aiAgents,
+    }).catch((error) => {
+      console.error('Badge trigger error:', error)
+      return []
+    })
 
     return NextResponse.json({
       message: "Prompt created successfully",
       prompt: populatedPrompt,
+      newBadges: newBadges || [], // Include earned badges in response
     })
   } catch (error) {
     console.error("Create prompt error:", error)

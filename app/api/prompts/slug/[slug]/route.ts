@@ -8,12 +8,13 @@ import Prompt from "@/lib/models/Prompt"
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     await dbConnect()
+    const { slug } = await params
 
-    const prompt = await Prompt.findOne({ slug: params.slug })
+    const prompt = await Prompt.findOne({ slug })
       .populate("createdBy", "name _id")
       .lean() as any
 

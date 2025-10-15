@@ -369,7 +369,7 @@ export default function DevModeInterface({ prompts, currentUserId, onDeactivate 
                     <SelectTrigger className="flex-1">
                       <SelectValue placeholder="Select AI Agent" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={5} className="max-h-[300px]">
                       <SelectItem value="none">Select AI Agent</SelectItem>
                       {AI_AGENTS.map((agent) => (
                         <SelectItem key={agent} value={agent}>

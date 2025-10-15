@@ -5,12 +5,11 @@ import { getHighestTier } from '@/lib/badges/get-highest-tier'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect()
-
-    const userId = params.id
+    const { id: userId } = await params
 
     // Find all prompts by this user (only public ones unless it's their own profile)
     const prompts = await Prompt.find({

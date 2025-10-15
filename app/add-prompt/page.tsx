@@ -9,12 +9,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/hooks/use-toast"
+import { useBadgeCelebration } from "@/hooks/use-badge-celebration"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
-import { toast } from "@/hooks/use-toast"
+import { CATEGORIES, AI_AGENTS } from "@/lib/constants"
 import Navbar from "@/components/Navbar"
-import { AI_AGENTS, CATEGORIES } from "@/lib/constants"
 import Footer from "@/components/Footer"
 
 interface User {
@@ -33,6 +34,8 @@ const TECHNOLOGIES = [
 
 export default function AddPromptPage() {
   const router = useRouter()
+  const { toast } = useToast()
+  const { checkAndCelebrate } = useBadgeCelebration()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -140,6 +143,8 @@ export default function AddPromptPage() {
       })
 
       if (response.ok) {
+        const data = await response.json()
+        
         // Clear cache when new prompt is created
         localStorage.removeItem('cachedPrompts')
         localStorage.removeItem('cachedPromptsTime')
@@ -148,7 +153,14 @@ export default function AddPromptPage() {
           title: "Success!",
           description: "Your prompt has been created",
         })
-        router.push("/")
+
+        // Check for badge celebrations
+        checkAndCelebrate(data)
+        
+        // Navigate after a short delay to allow celebration to show
+        setTimeout(() => {
+          router.push("/")
+        }, 500)
       } else {
         const error = await response.json()
         toast({

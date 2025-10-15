@@ -398,7 +398,7 @@ export default function PromptDetailModal({
                 <SelectTrigger className="text-xs sm:text-sm">
                   <SelectValue placeholder="Select AI Agent" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" sideOffset={5} className="max-h-[300px]">
                   {AI_AGENTS.map((agent) => (
                     <SelectItem key={agent} value={agent}>
                       {agent}

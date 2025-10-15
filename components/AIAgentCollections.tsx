@@ -37,24 +37,23 @@ export default function AIAgentCollections({ onAgentSelect, selectedAgent }: AIA
   }
 
   const getAgentLogo = (agent: string) => {
-    // Return appropriate emoji/icon for each agent
     const logos: { [key: string]: string } = {
-      ChatGPT: "🤖",
-      Gemini: "✨",
-      Claude: "🧠",
-      v0: "⚡",
-      Lovable: "💖",
-      Bolt: "⚡",
-      Replit: "🔧",
-      "Stable Diffusion": "🎨",
-      "DALL-E": "🖼️",
-      Midjourney: "🌟",
-      Sora: "🎬",
-      Runway: "🎭",
-      Perplexity: "🔍",
-      "GitHub Copilot": "👨‍💻",
+      ChatGPT: "https://cdn.oaistatic.com/_next/static/media/apple-touch-icon.59f2e898.png",
+      Gemini: "https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg",
+      Claude: "https://claude.ai/images/claude_app_icon.png",
+      v0: "https://v0.dev/v0.svg",
+      Lovable: "https://lovable.dev/favicon.ico",
+      Bolt: "https://bolt.new/social_preview_index.jpg",
+      Replit: "https://replit.com/public/images/logo-small.png",
+      "Stable Diffusion": "https://stability.ai/favicon.ico",
+      "DALL-E": "https://cdn.oaistatic.com/_next/static/media/apple-touch-icon.59f2e898.png",
+      Midjourney: "https://cdn.midjourney.com/favicon.ico",
+      Sora: "https://cdn.oaistatic.com/_next/static/media/apple-touch-icon.59f2e898.png",
+      Runway: "https://runwayml.com/favicon.ico",
+      Perplexity: "https://www.perplexity.ai/favicon.svg",
+      "GitHub Copilot": "https://github.githubassets.com/favicons/favicon.svg",
     }
-    return logos[agent] || "🤖"
+    return logos[agent] || "/placeholder.svg"
   }
 
   if (loading) {
@@ -77,7 +76,9 @@ export default function AIAgentCollections({ onAgentSelect, selectedAgent }: AIA
     <div className="space-y-4">
       <div className="text-center">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">Browse by AI Agent</h2>
-        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Discover prompts for your favorite AI platforms</p>
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+          Discover prompts for your favorite AI platforms
+        </p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
@@ -92,7 +93,13 @@ export default function AIAgentCollections({ onAgentSelect, selectedAgent }: AIA
             onClick={() => onAgentSelect(agent)}
           >
             <CardContent className="p-3 sm:p-4 text-center">
-              <div className="text-2xl sm:text-4xl mb-2">{getAgentLogo(agent)}</div>
+              <div className="flex items-center justify-center mb-2">
+                <img
+                  src={getAgentLogo(agent) || "/placeholder.svg"}
+                  alt={`${agent} logo`}
+                  className="h-8 w-8 sm:h-12 sm:w-12 object-contain"
+                />
+              </div>
               <h3 className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white mb-1">{agent}</h3>
               <Badge variant="secondary" className="text-xs">
                 {agentStats[agent] || 0} prompts

@@ -8,9 +8,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { BadgeService } from '@/services/badge-service'
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 /**
@@ -22,7 +22,7 @@ export async function GET(
   { params }: RouteParams
 ) {
   try {
-    const { id: userId } = params
+    const { id: userId } = await params
 
     if (!userId) {
       return NextResponse.json(

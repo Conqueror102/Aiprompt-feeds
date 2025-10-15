@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import Link from "next/link"
 import { TrendingUp, Clock, Heart, Users, Trophy, Award, Sparkles, Info, Target, BookOpen } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -14,6 +15,7 @@ import BadgeCollection from "@/components/badges/BadgeCollection"
 import { useBadges } from "@/hooks/use-badges"
 import { ALL_BADGES } from "@/lib/badges/badge-definitions"
 import { BadgeCategory } from "@/types/badge"
+import { LeaderboardWidget } from "@/components/leaderboard"
 
 interface Prompt {
   _id: string
@@ -263,30 +265,37 @@ export default function ExplorePage() {
         </div>
 
         {/* Platform Stats */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Info className="h-5 w-5" />
-              Platform Statistics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="text-3xl font-bold text-green-600">{totalPromptsOnPlatform}</div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Total Prompts on Platform</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5" />
+                Platform Statistics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="text-3xl font-bold text-green-600">{totalPromptsOnPlatform}</div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Total Prompts on Platform</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="text-3xl font-bold text-green-600">{earnedCount}</div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Badges Earned</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="text-3xl font-bold text-green-600">{user?.following || 0}</div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Following</p>
+                </div>
               </div>
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="text-3xl font-bold text-blue-600">{earnedCount}</div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Badges Earned</p>
-              </div>
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="text-3xl font-bold text-purple-600">{user?.following || 0}</div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Following</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Badge Leaderboard Widget */}
+          <div className="h-full">
+            <LeaderboardWidget />
+          </div>
+        </div>
 
         {/* About the Platform */}
         <Card className="mb-8">
@@ -894,6 +903,189 @@ export default function ExplorePage() {
                       <p className="text-sm font-semibold text-green-800 dark:text-green-200">💡 Tip: Badges are checked automatically after key actions like creating prompts, receiving likes, or gaining followers!</p>
                     </div>
                   </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
+        </Card>
+
+        {/* Badge Scoring System */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              How Badge Scoring Works
+            </CardTitle>
+            <CardDescription>
+              Understanding the leaderboard scoring system
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="scoring-guide">
+                <AccordionTrigger>View Badge Scoring Formula & Guide</AccordionTrigger>
+                <AccordionContent>
+            <div className="space-y-4">
+              <p className="text-gray-600 dark:text-gray-400">
+                Your leaderboard score is calculated based on the badges you earn. Each badge has three key factors:
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Tier Weights */}
+                <div className="p-4 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
+                  <h4 className="font-semibold text-yellow-900 dark:text-yellow-200 mb-3 flex items-center gap-2">
+                    <Trophy className="h-4 w-4" />
+                    1. Badge Tier (Base Points)
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>🏆 Legendary</span>
+                      <strong className="text-yellow-700 dark:text-yellow-300">1,000 pts</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>⚡ Epic</span>
+                      <strong className="text-purple-700 dark:text-purple-300">500 pts</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>💎 Rare</span>
+                      <strong className="text-blue-700 dark:text-blue-300">200 pts</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>🌿 Uncommon</span>
+                      <strong className="text-green-700 dark:text-green-300">50 pts</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>🌱 Common</span>
+                      <strong className="text-gray-700 dark:text-gray-300">10 pts</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Level Multipliers */}
+                <div className="p-4 border-2 border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-200 mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    2. Level Multiplier
+                  </h4>
+                  <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                    <div className="flex justify-between">
+                      <span>Level 1</span>
+                      <strong>1.0x</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Level 2</span>
+                      <strong className="text-blue-600">1.5x</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Level 3</span>
+                      <strong className="text-blue-700">2.0x</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Level 4</span>
+                      <strong className="text-purple-600">3.0x</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Level 5</span>
+                      <strong className="text-yellow-600">5.0x</strong>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                      *For progressive badges only
+                    </p>
+                  </div>
+                </div>
+
+                {/* Category Bonuses */}
+                <div className="p-4 border-2 border-green-200 dark:border-green-800 rounded-lg bg-green-50 dark:bg-green-900/20">
+                  <h4 className="font-semibold text-green-900 dark:text-green-200 mb-3 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    3. Category Bonus
+                  </h4>
+                  <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                    <div className="flex justify-between">
+                      <span>🎯 Milestone</span>
+                      <strong className="text-green-600">1.3x</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>⭐ Specialty</span>
+                      <strong className="text-green-600">1.25x</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>✍️ Content</span>
+                      <strong className="text-green-600">1.2x</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>❤️ Engagement</span>
+                      <strong>1.15x</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>👥 Social</span>
+                      <strong>1.1x</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>⏰ Time-Based</span>
+                      <strong>1.05x</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Formula */}
+              <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg border-2 border-green-200 dark:border-green-800">
+                <h4 className="font-bold text-gray-900 dark:text-white mb-2">📐 Scoring Formula</h4>
+                <code className="text-sm font-mono text-gray-800 dark:text-gray-200 block mb-3">
+                  Badge Score = Base Points × Level Multiplier × Category Bonus
+                </code>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Your <strong>Total Score</strong> is the sum of all your badge scores!
+                </p>
+              </div>
+
+              {/* Examples */}
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="examples">
+                  <AccordionTrigger>See Calculation Examples</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3">
+                      <div className="p-3 bg-white dark:bg-gray-900 rounded-lg border">
+                        <p className="font-semibold text-sm mb-2">Example 1: "First Steps" Badge</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Common • Content Creation • Level 1</p>
+                        <code className="text-xs font-mono text-gray-700 dark:text-gray-300 block">
+                          10 × 1.0 × 1.2 = <strong className="text-green-600">12 points</strong>
+                        </code>
+                      </div>
+
+                      <div className="p-3 bg-white dark:bg-gray-900 rounded-lg border">
+                        <p className="font-semibold text-sm mb-2">Example 2: "Platinum Creator" Badge</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Epic • Content Creation • Level 3</p>
+                        <code className="text-xs font-mono text-gray-700 dark:text-gray-300 block">
+                          500 × 2.0 × 1.2 = <strong className="text-purple-600">1,200 points</strong>
+                        </code>
+                      </div>
+
+                      <div className="p-3 bg-white dark:bg-gray-900 rounded-lg border">
+                        <p className="font-semibold text-sm mb-2">Example 3: "Legend" Badge</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Legendary • Milestone • Level 1</p>
+                        <code className="text-xs font-mono text-gray-700 dark:text-gray-300 block">
+                          1,000 × 1.0 × 1.3 = <strong className="text-yellow-600">1,300 points</strong>
+                        </code>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              {/* Tips */}
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2">💡 Strategy to Maximize Your Score</h4>
+                <ul className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                  <li>🎯 Focus on earning high-tier badges (Rare, Epic, Legendary)</li>
+                  <li>📈 Level up progressive badges to unlock multipliers</li>
+                  <li>⭐ Prioritize Content Creation and Milestone categories</li>
+                  <li>🏆 Collect as many badges as possible - every badge counts!</li>
+                  <li>📊 Check the <Link href="/leaderboard" className="text-green-600 hover:underline font-semibold">leaderboard</Link> to see where you rank</li>
+                </ul>
+              </div>
+            </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

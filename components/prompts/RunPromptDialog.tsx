@@ -34,7 +34,7 @@ export default function RunPromptDialog({
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select AI" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper" sideOffset={5} className="max-h-[300px]">
               <SelectItem value="none">Select AI</SelectItem>
               {AI_AGENTS.map((agent) => (
                 <SelectItem key={agent} value={agent}>

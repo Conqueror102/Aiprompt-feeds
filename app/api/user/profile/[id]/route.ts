@@ -6,12 +6,11 @@ import { verifyToken } from '@/lib/auth'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect()
-
-    const userId = params.id
+    const { id: userId } = await params
 
     // Get current user ID if authenticated
     let currentUserId: string | null = null

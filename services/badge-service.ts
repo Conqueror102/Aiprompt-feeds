@@ -36,6 +36,7 @@ import {
 import User from '@/lib/models/User'
 import Prompt from '@/lib/models/Prompt'
 import Comment from '@/lib/models/Comment'
+import { LeaderboardService } from './leaderboard-service'
 
 export class BadgeService {
   /**
@@ -336,6 +337,9 @@ export class BadgeService {
           }
         }
       )
+      
+      // Clear leaderboard cache when badge is awarded
+      LeaderboardService.clearCache()
     } catch (error) {
       console.error(`Error awarding badge ${badgeId} to user ${userId}:`, error)
       throw error
@@ -357,6 +361,9 @@ export class BadgeService {
           }
         }
       )
+      
+      // Clear leaderboard cache when badge is upgraded
+      LeaderboardService.clearCache()
     } catch (error) {
       console.error(`Error upgrading badge ${badgeId} for user ${userId}:`, error)
       throw error

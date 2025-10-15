@@ -4,12 +4,11 @@ import User from '@/lib/models/User'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect()
-
-    const userId = params.id
+    const { id: userId } = await params
 
     const user = await User.findById(userId)
       .populate('followers', 'name email avatar bio')
