@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     description: 'Browse, post, save, and share prompts for different AI agents like ChatGPT, Gemini, Stable Diffusion, and more.',
     images: [
       {
-        url: '/logoBG.png',
+        url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/logoBG.png`,
         width: 1200,
         height: 630,
         alt: 'AI Prompt Hub',
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'AI Prompts - Share & Discover AI Prompts',
     description: 'Browse, post, save, and share prompts for different AI agents.',
-    images: ['/logoBG.png'],
+    images: [`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/logoBG.png`],
   },
 }
 

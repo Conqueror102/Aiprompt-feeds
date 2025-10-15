@@ -52,6 +52,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     prompt.technologies
   )
 
+  // Generate dynamic OG image URL
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+  const ogImageUrl = prompt.seo?.ogImage || 
+    `${baseUrl}/api/og?title=${encodeURIComponent(prompt.title)}&description=${encodeURIComponent(metaDescription)}&category=${encodeURIComponent(prompt.category)}&author=${encodeURIComponent(prompt.createdBy.name)}`
+
   return {
     title: metaTitle,
     description: metaDescription,
@@ -75,20 +80,20 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       description: metaDescription,
       url: `/prompt/${prompt.slug}`,
       type: "article",
-      images: prompt.seo?.ogImage ? [
+      images: [
         {
-          url: prompt.seo.ogImage,
+          url: ogImageUrl,
           width: 1200,
           height: 630,
           alt: prompt.title,
         }
-      ] : undefined,
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: metaTitle,
       description: metaDescription,
-      images: prompt.seo?.ogImage ? [prompt.seo.ogImage] : undefined,
+      images: [ogImageUrl],
     },
   }
 }
