@@ -32,6 +32,8 @@ export default function HomePage() {
   const [tempSelectedPromptId, setTempSelectedPromptId] = useState<string | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [showAIAgentCollections, setShowAIAgentCollections] = useState(false)
+  const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>([])
+  const [selectedTools, setSelectedTools] = useState<string[]>([])
 
   // Use the filter hook with additional filters
   const {
@@ -44,6 +46,14 @@ export default function HomePage() {
     filteredPrompts: baseFilteredPrompts,
   } = usePromptFilters(prompts)
 
+  // Clear dev filters when switching away from Development category
+  useEffect(() => {
+    if (selectedCategory !== "Development") {
+      setSelectedTechnologies([])
+      setSelectedTools([])
+    }
+  }, [selectedCategory])
+
   // Apply additional filters
   const filteredPrompts = baseFilteredPrompts.filter((prompt) => {
     if (selectedAgentForFilter && selectedAgentForFilter !== "all") {
@@ -52,6 +62,26 @@ export default function HomePage() {
     if (selectedCategoryFilter && prompt.category !== selectedCategoryFilter) {
       return false
     }
+    
+    // Development-specific filters
+    if (selectedCategory === "Development" || selectedCategoryFilter === "Development") {
+      // Filter by technologies
+      if (selectedTechnologies.length > 0) {
+        const hasMatchingTech = selectedTechnologies.some((tech) =>
+          prompt.technologies?.includes(tech)
+        )
+        if (!hasMatchingTech) return false
+      }
+      
+      // Filter by tools
+      if (selectedTools.length > 0) {
+        const hasMatchingTool = selectedTools.some((tool) =>
+          prompt.tools?.includes(tool)
+        )
+        if (!hasMatchingTool) return false
+      }
+    }
+    
     return true
   })
 
@@ -219,9 +249,13 @@ export default function HomePage() {
             searchTerm={searchTerm}
             selectedCategory={selectedCategory}
             selectedAgent={selectedAgentForFilter}
+            selectedTechnologies={selectedTechnologies}
+            selectedTools={selectedTools}
             onSearchChange={setSearchTerm}
             onCategoryChange={setSelectedCategory}
             onAgentChange={setSelectedAgentForFilter}
+            onTechnologiesChange={setSelectedTechnologies}
+            onToolsChange={setSelectedTools}
           />
 
           <div id="prompts-section">

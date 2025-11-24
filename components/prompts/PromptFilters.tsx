@@ -3,24 +3,35 @@ import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AI_AGENTS, CATEGORIES } from '@/lib/constants'
+import DevFilters from './DevFilters'
 
 interface PromptFiltersProps {
   searchTerm: string
   selectedCategory: string
   selectedAgent: string
+  selectedTechnologies?: string[]
+  selectedTools?: string[]
   onSearchChange: (value: string) => void
   onCategoryChange: (value: string) => void
   onAgentChange: (value: string) => void
+  onTechnologiesChange?: (technologies: string[]) => void
+  onToolsChange?: (tools: string[]) => void
 }
 
 export default function PromptFilters({
   searchTerm,
   selectedCategory,
   selectedAgent,
+  selectedTechnologies = [],
+  selectedTools = [],
   onSearchChange,
   onCategoryChange,
   onAgentChange,
+  onTechnologiesChange,
+  onToolsChange,
 }: PromptFiltersProps) {
+  const isDevCategory = selectedCategory === "Development"
+
   return (
     <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6 mb-6 sm:mb-8">
       <div className="flex flex-col gap-4">
@@ -65,6 +76,18 @@ export default function PromptFilters({
             </SelectContent>
           </Select>
         </div>
+
+        {/* Development-specific filters */}
+        {isDevCategory && onTechnologiesChange && onToolsChange && (
+          <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+            <DevFilters
+              selectedTechnologies={selectedTechnologies}
+              selectedTools={selectedTools}
+              onTechnologiesChange={onTechnologiesChange}
+              onToolsChange={onToolsChange}
+            />
+          </div>
+        )}
       </div>
     </div>
   )

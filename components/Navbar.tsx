@@ -44,9 +44,13 @@ export default function Navbar({ user, onSidebarToggle, isSidebarOpen }: NavbarP
   const { logout } = useAuth()
   const [mounted, setMounted] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [hasToken, setHasToken] = useState(false)
 
   useEffect(() => {
     setMounted(true)
+    // Optimistically check for token to prevent flash
+    const token = localStorage.getItem('token')
+    setHasToken(!!token)
   }, [])
 
   const handleLogout = () => {
@@ -165,6 +169,12 @@ export default function Navbar({ user, onSidebarToggle, isSidebarOpen }: NavbarP
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
+            ) : hasToken ? (
+              // Show loading skeleton if we have a token but user data hasn't loaded yet
+              <div className="flex items-center gap-2">
+                <div className="h-9 w-24 rounded-md bg-muted animate-pulse" />
+                <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+              </div>
             ) : (
               <div className="flex space-x-2">
                 <Link href="/login">
