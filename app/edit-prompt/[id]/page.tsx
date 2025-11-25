@@ -89,6 +89,7 @@ export default function EditPromptPage() {
   const [selectedAgent, setSelectedAgent] = useState<string>("")
   const [loading, setLoading] = useState(true)
   const editorRef = useRef<HTMLDivElement>(null)
+  const isInitialized = useRef(false)
   const [fontSize, setFontSize] = useState(16)
   const [fontFamily, setFontFamily] = useState("Inter")
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -121,6 +122,14 @@ export default function EditPromptPage() {
     }
   }, [currentUser, prompt])
 
+  // Initialize editor content when it becomes available
+  useEffect(() => {
+    if (editorRef.current && editedContent && !isInitialized.current) {
+      editorRef.current.innerHTML = editedContent
+      isInitialized.current = true
+    }
+  }, [editedContent])
+
   const fetchUser = async () => {
     try {
       const token = localStorage.getItem("token")
@@ -151,12 +160,6 @@ export default function EditPromptPage() {
         // Convert plain text to HTML with proper line breaks to prevent overlap
         const htmlContent = data.content.replace(/\n/g, '<br>')
         setEditedContent(htmlContent)
-        
-        // Initialize editor content without triggering re-render
-        if (editorRef.current && !editorRef.current.innerHTML) {
-          editorRef.current.innerHTML = htmlContent
-        }
-        
         setSelectedAgent(data.aiAgents[0] || "")
         
         // Initialize form data for owners
