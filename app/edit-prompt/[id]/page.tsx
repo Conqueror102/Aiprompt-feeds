@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { 
   Save, 
@@ -88,6 +88,7 @@ export default function EditPromptPage() {
   const [editedContent, setEditedContent] = useState("")
   const [selectedAgent, setSelectedAgent] = useState<string>("")
   const [loading, setLoading] = useState(true)
+  const editorRef = useRef<HTMLDivElement>(null)
   const [fontSize, setFontSize] = useState(16)
   const [fontFamily, setFontFamily] = useState("Inter")
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -150,6 +151,12 @@ export default function EditPromptPage() {
         // Convert plain text to HTML with proper line breaks to prevent overlap
         const htmlContent = data.content.replace(/\n/g, '<br>')
         setEditedContent(htmlContent)
+        
+        // Initialize editor content without triggering re-render
+        if (editorRef.current && !editorRef.current.innerHTML) {
+          editorRef.current.innerHTML = htmlContent
+        }
+        
         setSelectedAgent(data.aiAgents[0] || "")
         
         // Initialize form data for owners
@@ -432,6 +439,8 @@ export default function EditPromptPage() {
 
   const handleEditorChange = (e: React.FormEvent<HTMLDivElement>) => {
     const content = e.currentTarget.innerHTML
+    
+    // Update state without re-rendering the editor
     setEditedContent(content)
     setShowPlaceholder(content === '' || content === '<br>' || content === '<div><br></div>')
     updateActiveFormats()
@@ -739,9 +748,10 @@ export default function EditPromptPage() {
                 <CardContent className="p-3 sm:p-6">
                   <div className="prose prose-lg max-w-none relative">
                     <div
+                      ref={editorRef}
                       id="prompt-editor"
                       contentEditable
-                      dangerouslySetInnerHTML={{ __html: editedContent }}
+                      suppressContentEditableWarning
                       onInput={handleEditorChange}
                       onPaste={handleEditorPaste}
                       onFocus={handleEditorFocus}
@@ -917,9 +927,10 @@ export default function EditPromptPage() {
               <CardContent className="p-3 sm:p-6">
                 <div className="prose prose-lg max-w-none relative">
                   <div
+                    ref={editorRef}
                     id="prompt-editor"
                     contentEditable
-                    dangerouslySetInnerHTML={{ __html: editedContent }}
+                    suppressContentEditableWarning
                     onInput={handleEditorChange}
                     onPaste={handleEditorPaste}
                     onFocus={handleEditorFocus}
