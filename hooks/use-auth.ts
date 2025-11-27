@@ -6,7 +6,14 @@ import { authService } from '@/services/auth-service'
 import { User } from '@/types'
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null)
+  // Initialize user from cached data immediately to prevent skeleton flash
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cachedUser = localStorage.getItem('cachedUser')
+      return cachedUser ? JSON.parse(cachedUser) : null
+    }
+    return null
+  })
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -16,18 +23,22 @@ export function useAuth() {
     if (!token) {
       setUser(null)
       setLoading(false)
+      localStorage.removeItem('cachedUser')
       return
     }
 
     try {
       const userData = await authService.getCurrentUser()
       setUser(userData)
+      // Cache user data for instant loading on next visit
+      localStorage.setItem('cachedUser', JSON.stringify(userData))
     } catch (error: any) {
       console.error("Failed to fetch user:", error)
       
       // Only logout if it's an authentication error (401)
       if (error?.message?.includes("401") || error?.message?.includes("Unauthorized") || error?.message?.includes("Invalid token")) {
         localStorage.removeItem("token")
+        localStorage.removeItem('cachedUser')
         setUser(null)
         toast({
           title: "Session Expired",
@@ -43,6 +54,7 @@ export function useAuth() {
 
   const logout = () => {
     localStorage.removeItem("token")
+    localStorage.removeItem('cachedUser')
     setUser(null)
     toast({
       title: "Logged Out",
@@ -56,6 +68,7 @@ export function useAuth() {
     try {
       const data = await authService.login(email, password)
       localStorage.setItem("token", data.token)
+      localStorage.setItem('cachedUser', JSON.stringify(data.user))
       setUser(data.user)
       toast({
         title: "Welcome back!",
@@ -78,6 +91,7 @@ export function useAuth() {
     try {
       const data = await authService.register(name, email, password)
       localStorage.setItem("token", data.token)
+      localStorage.setItem('cachedUser', JSON.stringify(data.user))
       setUser(data.user)
       toast({
         title: "Welcome!",
