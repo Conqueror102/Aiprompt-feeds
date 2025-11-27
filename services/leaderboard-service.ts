@@ -23,6 +23,8 @@ import { BadgeTier, BadgeCategory, UserBadge } from '@/types/badge'
 import { getBadgeDefinition } from '@/lib/badges/badge-definitions'
 import User from '@/lib/models/User'
 
+type LeaderboardEntryBase = Omit<LeaderboardEntry, 'rank'>
+
 export class LeaderboardService {
   private static scoringConfig: ScoringConfig = DEFAULT_SCORING_CONFIG
   private static cache: Map<string, { data: any; timestamp: number }> = new Map()
@@ -158,22 +160,18 @@ export class LeaderboardService {
           badgeCount: { $gt: 0 }, // Only users with badges
         },
       },
-      { $sort: { badgeCount: -1, createdAt: 1 } },
-      { $skip: offset },
-      { $limit: limit },
     ]
 
     const users = await User.aggregate(pipeline)
 
     // Calculate scores and format entries
     const entries = await Promise.all(
-      users.map(async (user, index) => {
+      users.map(async (user) => {
         const score = await this.calculateUserScore(user.filteredBadges)
         const breakdown = this.getBadgeBreakdown(user.filteredBadges)
         const topBadges = await this.getTopBadges(user.filteredBadges, 3)
 
         return {
-          rank: offset + index + 1,
           userId: user._id.toString(),
           userName: user.name,
           avatar: user.avatar,
@@ -182,12 +180,12 @@ export class LeaderboardService {
           badgeBreakdown: breakdown,
           topBadges,
           joinedAt: user.createdAt,
-        } as LeaderboardEntry
+        } as LeaderboardEntryBase
       })
     )
 
-    // Already sorted by badge count in MongoDB query, ranks are correct
-    return entries
+    const sortedEntries = this.sortLeaderboardEntries(entries)
+    return this.assignRanks(sortedEntries, offset, limit)
   }
 
   /**
@@ -243,15 +241,12 @@ export class LeaderboardService {
     )
 
     // Remove nulls and sort
-    const validUsers = scoredUsers
-      .filter((user): user is NonNullable<typeof user> => user !== null)
-      .sort((a, b) => b.totalScore - a.totalScore)
+    const validUsers = scoredUsers.filter(
+      (user): user is NonNullable<typeof user> => user !== null
+    )
 
-    // Paginate and assign ranks
-    return validUsers.slice(offset, offset + limit).map((user, index) => ({
-      ...user,
-      rank: offset + index + 1,
-    }))
+    const sortedUsers = this.sortLeaderboardEntries(validUsers)
+    return this.assignRanks(sortedUsers, offset, limit)
   }
 
   /**
@@ -496,6 +491,35 @@ export class LeaderboardService {
       .filter((b): b is BadgeWithDetails => b !== null)
       .sort((a, b) => b.score - a.score)
       .slice(0, limit)
+  }
+
+  private static sortLeaderboardEntries(
+    entries: LeaderboardEntryBase[]
+  ): LeaderboardEntryBase[] {
+    return entries.sort((a, b) => {
+      if (b.totalScore !== a.totalScore) {
+        return b.totalScore - a.totalScore
+      }
+
+      if (b.badgeCount !== a.badgeCount) {
+        return b.badgeCount - a.badgeCount
+      }
+
+      const aJoined = a.joinedAt ? new Date(a.joinedAt).getTime() : 0
+      const bJoined = b.joinedAt ? new Date(b.joinedAt).getTime() : 0
+      return aJoined - bJoined
+    })
+  }
+
+  private static assignRanks(
+    entries: LeaderboardEntryBase[],
+    offset: number,
+    limit: number
+  ): LeaderboardEntry[] {
+    return entries.slice(offset, offset + limit).map((entry, index) => ({
+      ...entry,
+      rank: offset + index + 1,
+    }))
   }
 
   /**
