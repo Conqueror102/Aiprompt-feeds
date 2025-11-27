@@ -26,8 +26,14 @@ export const CATEGORIES = [
   "Image Generation",
   "Video Creation",
   "Business",
+  "Productivity & Automation",
+  "Customer Support & Operations",
+  "Data & Analytics",
   "Education",
   "Research",
+  "Health & Wellness",
+  "Lifestyle & Personal Growth",
+  "Legal & Finance",
   "Entertainment",
   "@Random"
 ]
