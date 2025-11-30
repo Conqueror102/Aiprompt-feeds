@@ -10,9 +10,12 @@ import { AI_AGENTS, CATEGORIES } from '@/lib/constants'
 
 /**
  * Check if user has created prompts for minimum number of different AI agents
+ * Requires multiple prompts to prevent gaming with a single prompt that has many agents
  */
 export function checkAgentDiversity(stats: UserStats, params: { minAgents: number }): boolean {
-  return stats.agentsUsed.length >= params.minAgents
+  // Require at least 2 prompts to prevent single-prompt exploits
+  // and ensure user has used the minimum number of different agents
+  return stats.totalPrompts >= 2 && stats.agentsUsed.length >= params.minAgents
 }
 
 /**
