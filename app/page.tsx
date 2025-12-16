@@ -21,11 +21,15 @@ import CommentModal from "@/components/comments/CommentModal"
 
 export default function HomePage() {
   const { user } = useAuth()
-  const { prompts, loading, setPrompts, loadMore, hasMore, isFetchingMore } = usePrompts()
   const { likedPromptIds, savedPromptIds, toggleLike, toggleSave } = usePromptInteractions(user?.id)
   const { isOpen: isCommentModalOpen, selectedPrompt: commentPrompt, openCommentModal, closeCommentModal } = useCommentModal()
   
   const [selectedAgentForFilter, setSelectedAgentForFilter] = useState<string>("all")
+
+  const { prompts, loading, updatePrompt, loadMore, hasMore, isFetchingMore } = usePrompts({ 
+    limit: 12, 
+    agent: selectedAgentForFilter !== "all" ? selectedAgentForFilter : undefined 
+  })
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("")
   const [selectedPromptForModal, setSelectedPromptForModal] = useState<Prompt | null>(null)
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
@@ -131,14 +135,8 @@ export default function HomePage() {
   }
 
   const handlePromptRated = (promptId: string, newRating: number) => {
-    // Update the prompt in the main prompts array
-    setPrompts(prevPrompts => 
-      prevPrompts.map(prompt => 
-        prompt._id === promptId 
-          ? { ...prompt, rating: newRating }
-          : prompt
-      )
-    )
+    // Update the prompt using the new helper
+    updatePrompt(promptId, { rating: newRating })
     
     // Update the modal if it's open for this prompt
     if (selectedPromptForModal && selectedPromptForModal._id === promptId) {
@@ -151,26 +149,20 @@ export default function HomePage() {
     const wasLiked = likedPromptIds.has(promptId)
     
     // Optimistically update the prompts array
-    setPrompts(prevPrompts => 
-      prevPrompts.map(prompt => 
-        prompt._id === promptId 
-          ? { ...prompt, likes: wasLiked ? prompt.likes - 1 : prompt.likes + 1 }
-          : prompt
-      )
-    )
+    const prompt = prompts.find(p => p._id === promptId)
+    if (prompt) {
+       updatePrompt(promptId, { likes: wasLiked ? prompt.likes - 1 : prompt.likes + 1 })
+    }
     
     // Call the original toggle like
     const success = await toggleLike(promptId)
     
     // Revert if failed
     if (!success) {
-      setPrompts(prevPrompts => 
-        prevPrompts.map(prompt => 
-          prompt._id === promptId 
-            ? { ...prompt, likes: wasLiked ? prompt.likes + 1 : prompt.likes - 1 }
-            : prompt
-        )
-      )
+      const prompt = prompts.find(p => p._id === promptId)
+      if (prompt) {
+        updatePrompt(promptId, { likes: wasLiked ? prompt.likes + 1 : prompt.likes - 1 })
+      }
     }
   }
 

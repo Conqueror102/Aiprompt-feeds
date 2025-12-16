@@ -227,6 +227,7 @@ CommentSchema.statics.getPromptComments = async function(
           {
             $project: {
               _id: 1,
+              promptId: 1,
               content: 1,
               authorId: 1,
               author: 1,

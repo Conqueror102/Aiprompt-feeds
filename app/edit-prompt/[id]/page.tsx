@@ -36,6 +36,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
+import { usePrompt, useUpdatePrompt } from "@/hooks/use-prompts"
 import { AI_AGENTS } from "@/lib/constants"
 
 const CATEGORIES = [
@@ -79,26 +81,31 @@ interface Prompt {
   private?: boolean
 }
 
-export default function EditPromptPage() {
+  export default function EditPromptPage() {
   const router = useRouter()
   const params = useParams()
   const promptId = params.id as string
   
-  const [prompt, setPrompt] = useState<Prompt | null>(null)
+  // Queries & Mutations
+  const { user: currentUser, loading: userLoading } = useAuth()
+  const { data: prompt, isLoading: promptLoading, error: promptError } = usePrompt(promptId)
+  const updateMutation = useUpdatePrompt()
+  
   const [editedContent, setEditedContent] = useState("")
   const [selectedAgent, setSelectedAgent] = useState<string>("")
-  const [loading, setLoading] = useState(true)
   const editorRef = useRef<HTMLDivElement>(null)
   const isInitialized = useRef(false)
   const [fontSize, setFontSize] = useState(16)
   const [fontFamily, setFontFamily] = useState("Inter")
-  const [currentUser, setCurrentUser] = useState<any>(null)
   const [isOwner, setIsOwner] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [showPlaceholder, setShowPlaceholder] = useState(true)
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set())
   const [clipboardNotice, setClipboardNotice] = useState<string>("")
+  const [showPlaceholder, setShowPlaceholder] = useState(true)
   
+  // Note: We use loading state from query, but for UI flickering prevention 
+  // we might want to wait for both.
+  const loading = userLoading || promptLoading
+
   // Form data for owners
   const [formData, setFormData] = useState({
     title: "",
@@ -110,147 +117,88 @@ export default function EditPromptPage() {
     private: false,
   })
 
+  // Check ownership
   useEffect(() => {
-    fetchUser()
-    fetchPrompt()
-  }, [promptId])
-
-  useEffect(() => {
-    // Check ownership after both user and prompt are loaded
     if (currentUser && prompt) {
       setIsOwner(currentUser.id === prompt.createdBy._id)
     }
   }, [currentUser, prompt])
 
-  // Initialize editor content when it becomes available
+  // Initialize form when prompt loads
   useEffect(() => {
-    if (editorRef.current && editedContent && !isInitialized.current) {
-      editorRef.current.innerHTML = editedContent
-      isInitialized.current = true
-    }
-  }, [editedContent])
-
-  const fetchUser = async () => {
-    try {
-      const token = localStorage.getItem("token")
-      if (!token) return
-
-      const response = await fetch("/api/auth/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        const userData = await response.json()
-        setCurrentUser(userData)
-      }
-    } catch (error) {
-      console.error("Failed to fetch user:", error)
-    }
-  }
-
-  const fetchPrompt = async () => {
-    try {
-      const token = localStorage.getItem("token")
-      const response = await fetch(`/api/prompts/${promptId}`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined)
-      if (response.ok) {
-        const data = await response.json()
-        setPrompt(data)
-        // Convert plain text to HTML with proper line breaks to prevent overlap
-        const htmlContent = data.content.replace(/\n/g, '<br>')
-        setEditedContent(htmlContent)
-        setSelectedAgent(data.aiAgents[0] || "")
+    if (prompt) {
+        // Only initialize if not already done or if promptId changed
+        // Actually, react-query handles caching, but we need to put data into local state for editing.
+        // We should safeguard against overwriting user edits if re-fetch happens in background?
+        // Typically we initialize ONCE.
+        if (isInitialized.current && editorRef.current?.innerHTML) return 
         
-        // Initialize form data for owners
+        // Convert plain text to HTML
+        const htmlContent = prompt.content.replace(/\n/g, '<br>')
+        setEditedContent(htmlContent)
+        
+        // Set placeholders
+        if (editorRef.current) {
+             editorRef.current.innerHTML = htmlContent
+             isInitialized.current = true
+        }
+
+        setSelectedAgent(prompt.aiAgents[0] || "")
         setFormData({
-          title: data.title,
-          description: data.description || "",
-          category: data.category,
-          aiAgents: data.aiAgents || [],
-          technologies: data.technologies || [],
-          tools: data.tools || [],
-          private: !!data.private,
+            title: prompt.title,
+            description: prompt.description || "",
+            category: prompt.category,
+            aiAgents: prompt.aiAgents || [],
+            technologies: prompt.technologies || [],
+            tools: prompt.tools || [],
+            private: !!prompt.private,
         })
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to fetch prompt",
-          variant: "destructive",
-        })
+    }
+  }, [prompt])
+  
+  // Handle 404/Error
+  useEffect(() => {
+      if (promptError) {
+        toast({ title: "Error", description: "Failed to load prompt", variant: "destructive" })
         router.push("/")
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch prompt",
-        variant: "destructive",
-      })
-      router.push("/")
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [promptError, router])
 
   const handleSave = async () => {
     if (!prompt || !isOwner) return
     
-    setSaving(true)
-    try {
-      // Confirm if changing visibility from private -> public or public -> private
-      if (typeof formData.private === 'boolean' && formData.private !== !!prompt.private) {
+    // Confirm visibility change
+    if (typeof formData.private === 'boolean' && formData.private !== !!prompt.private) {
         const changingTo = formData.private ? 'private' : 'public'
-        const confirmed = window.confirm(`Are you sure you want to make this prompt ${changingTo}?`)
-        if (!confirmed) {
-          setSaving(false)
-          return
-        }
-      }
+        if (!window.confirm(`Are you sure you want to make this prompt ${changingTo}?`)) return
+    }
 
-      const response = await fetch(`/api/prompts/${promptId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
+    try {
+      await updateMutation.mutateAsync({
+        id: promptId,
+        data: {
           title: formData.title,
-          content: editedContent,
+          content: editedContent, // Helper used raw content, here it's editedContent (HTML) or we strip it? 
+          // Previous impl sent editedContent (HTML-ish).
           description: formData.description,
           category: formData.category,
           aiAgents: formData.aiAgents,
           technologies: formData.technologies,
           tools: formData.tools,
           private: formData.private,
-        }),
+        }
       })
-
-      if (response.ok) {
-        // Clear cache when prompt is edited
-        localStorage.removeItem('cachedPrompts')
-        localStorage.removeItem('cachedPromptsTime')
-        
-        toast({
-          title: "Saved!",
-          description: "Your prompt has been updated",
-        })
-        // Navigate back to the main page
-        router.push("/")
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to save prompt",
-          variant: "destructive",
-        })
-      }
+      toast({ title: "Saved!", description: "Your prompt has been updated" })
+      router.push("/")
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save prompt",
-        variant: "destructive",
+      // Mutation handles error toast? No, we handle it if we want custom message or fallback
+      // Actually mutation onError handles it if undefined here? 
+      // We didn't define onError in useUpdatePrompt for toast.
+      toast({ 
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Failed to save prompt", 
+        variant: "destructive" 
       })
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -570,15 +518,15 @@ export default function EditPromptPage() {
                         {formData.private ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                       </span>
                     </label>
-                    <Button
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none text-xs sm:text-sm h-10 sm:h-11"
-                    >
-                      <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                      <span className="hidden sm:inline">{saving ? "Saving..." : "Save Changes"}</span>
-                      <span className="sm:hidden">{saving ? "Saving..." : "Save"}</span>
-                    </Button>
+                      <Button
+                        onClick={handleSave}
+                        disabled={updateMutation.isPending}
+                        className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none text-xs sm:text-sm h-10 sm:h-11"
+                      >
+                        <Save className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                        <span className="hidden sm:inline">{updateMutation.isPending ? "Saving..." : "Save Changes"}</span>
+                        <span className="sm:hidden">{updateMutation.isPending ? "Saving..." : "Save"}</span>
+                      </Button>
                   </div>
                 )}
                 

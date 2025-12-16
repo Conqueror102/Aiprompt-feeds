@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { AI_AGENTS } from "@/lib/constants"
@@ -15,26 +15,17 @@ interface AgentStats {
 }
 
 export default function AIAgentCollections({ onAgentSelect, selectedAgent }: AIAgentCollectionsProps) {
-  const [agentStats, setAgentStats] = useState<AgentStats>({})
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchAgentStats()
-  }, [])
-
-  const fetchAgentStats = async () => {
-    try {
+  const { data: agentStats = {}, isLoading: loading } = useQuery({
+    queryKey: ['agent-stats'],
+    queryFn: async () => {
       const response = await fetch("/api/agents/stats")
-      if (response.ok) {
-        const data = await response.json()
-        setAgentStats(data.stats)
-      }
-    } catch (error) {
-      console.error("Failed to fetch agent stats:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
+      if (!response.ok) throw new Error("Failed to fetch agent stats")
+      const data = await response.json()
+      return data.stats as AgentStats
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+
 
   const getAgentLogo = (agent: string) => {
     const logos: { [key: string]: string } = {

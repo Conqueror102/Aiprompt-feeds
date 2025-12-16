@@ -1,61 +1,54 @@
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/hooks/use-toast'
-import { isTokenExpiringSoon } from '@/lib/auth'
 import { authService } from '@/services/auth-service'
 import { User } from '@/types'
 
 export function useAuth() {
-  // Initialize user from cached data immediately to prevent skeleton flash
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof window !== 'undefined') {
-      const cachedUser = localStorage.getItem('cachedUser')
-      return cachedUser ? JSON.parse(cachedUser) : null
-    }
-    return null
-  })
-  const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
 
-  const checkAuth = async () => {
-    const token = localStorage.getItem("token")
-    
-    if (!token) {
-      setUser(null)
-      setLoading(false)
-      localStorage.removeItem('cachedUser')
-      return
-    }
-
-    try {
-      const userData = await authService.getCurrentUser()
-      setUser(userData)
-      // Cache user data for instant loading on next visit
-      localStorage.setItem('cachedUser', JSON.stringify(userData))
-    } catch (error: any) {
-      console.error("Failed to fetch user:", error)
+  const { data: user, isLoading, refetch } = useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null
+      if (!token) return null
       
-      // Only logout if it's an authentication error (401)
-      if (error?.message?.includes("401") || error?.message?.includes("Unauthorized") || error?.message?.includes("Invalid token")) {
-        localStorage.removeItem("token")
-        localStorage.removeItem('cachedUser')
-        setUser(null)
-        toast({
-          title: "Session Expired",
-          description: "Please log in again.",
-          variant: "destructive",
-        })
-        router.push("/login")
+      try {
+        const userData = await authService.getCurrentUser()
+        // Keep keeping local copy for initialData on refresh
+        localStorage.setItem('cachedUser', JSON.stringify(userData))
+        return userData
+      } catch (error: any) {
+        // Handle 401s specifically
+        if (error?.message?.includes("401") || error?.message?.includes("Unauthorized")) {
+          localStorage.removeItem("token")
+          localStorage.removeItem('cachedUser')
+          return null
+        }
+        throw error
       }
-    } finally {
-      setLoading(false)
-    }
-  }
+    },
+    // Use cached user from localStorage as initial data to prevent flash
+    initialData: () => {
+      if (typeof window !== 'undefined') {
+        const cachedUser = localStorage.getItem('cachedUser')
+        return cachedUser ? JSON.parse(cachedUser) : undefined
+      }
+      return undefined
+    },
+    retry: false,
+    staleTime: 5 * 60 * 1000, // User data is relatively static
+  })
 
+  // Logout function
   const logout = () => {
     localStorage.removeItem("token")
     localStorage.removeItem('cachedUser')
-    setUser(null)
+    queryClient.setQueryData(['user'], null)
+    
     toast({
       title: "Logged Out",
       description: "You have been logged out. Please sign in again.",
@@ -64,12 +57,16 @@ export function useAuth() {
     router.push("/login")
   }
 
+  // Login function
   const login = async (email: string, password: string) => {
     try {
       const data = await authService.login(email, password)
       localStorage.setItem("token", data.token)
       localStorage.setItem('cachedUser', JSON.stringify(data.user))
-      setUser(data.user)
+      
+      // Update query cache immediately
+      queryClient.setQueryData(['user'], data.user)
+      
       toast({
         title: "Welcome back!",
         description: "You have been signed in successfully",
@@ -87,17 +84,23 @@ export function useAuth() {
     }
   }
 
+  // Register function
   const register = async (name: string, email: string, password: string) => {
     try {
       const data = await authService.register(name, email, password)
       localStorage.setItem("token", data.token)
       localStorage.setItem('cachedUser', JSON.stringify(data.user))
-      setUser(data.user)
+      
+      // Update query cache immediately
+      queryClient.setQueryData(['user'], data.user)
+      
       toast({
         title: "Welcome!",
         description: "Your account has been created successfully",
       })
-      router.push("/")
+      
+      const redirect = searchParams.get('redirect') || "/"
+      router.push(redirect)
       return { success: true }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create account"
@@ -110,16 +113,12 @@ export function useAuth() {
     }
   }
 
-  useEffect(() => {
-    checkAuth()
-  }, [])
-
   return {
-    user,
-    loading,
+    user: user ?? null, // Ensure explicit null if undefined
+    loading: isLoading,
     login,
     logout,
     register,
-    checkAuth,
+    checkAuth: refetch, // Alias refetch to checkAuth for compatibility
   }
 } 

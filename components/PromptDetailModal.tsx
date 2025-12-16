@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast"
 import { AI_AGENTS } from "@/lib/constants"
 import { useRouter } from "next/navigation"
 import CommentSection from "@/components/comments/CommentSection"
-import { cacheService } from "@/services/cache-service"
+import { useQueryClient } from "@tanstack/react-query"
 
 interface PromptDetailModalProps {
   prompt: {
@@ -48,6 +48,7 @@ export default function PromptDetailModal({
   onRated,
 }: PromptDetailModalProps) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [selectedAgent, setSelectedAgent] = useState<string>("")
   const [userRating, setUserRating] = useState<number>(0)
   const [hoverRating, setHoverRating] = useState<number>(0)
@@ -208,15 +209,9 @@ export default function PromptDetailModal({
         setRatingCount(data.count)
         setUserRating(star)
 
-        // Update cache selectively instead of clearing all
-        const updated = cacheService.updatePromptInCache(prompt._id, { 
-          rating: data.average 
-        })
-        
-        if (!updated) {
-          console.log('Cache update failed for rating, using smart invalidation')
-          cacheService.smartInvalidate('rating')
-        }
+        // Invalidate queries to refresh data across the app
+        queryClient.invalidateQueries({ queryKey: ['prompts'] })
+        queryClient.invalidateQueries({ queryKey: ['prompt', prompt._id] })
 
         // Update the prompt with the new rating data
         if (data.prompt && onRated) {

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { UserCircle, Calendar, Heart, FileText, Users, UserPlus, UserMinus, UserCheck, Trophy } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useUserProfile } from '@/hooks/use-user-profile'
-import { useFollow } from '@/hooks/use-follow'
+import { useFollow, useFollowers, useFollowing } from '@/hooks/use-follow'
 import { usePromptInteractions } from '@/hooks/use-prompt-interactions'
 import { useBadges } from '@/hooks/use-badges'
 import Navbar from '@/components/Navbar'
@@ -26,7 +26,7 @@ export default function UserProfilePage() {
   const params = useParams()
   const userId = params.id as string
   const { user } = useAuth()
-  const { profile, prompts, loading, refreshProfile, setProfile } = useUserProfile(userId)
+  const { profile, prompts, loading, refreshProfile, updateProfile } = useUserProfile(userId)
   const { toggleFollow, loading: followLoading } = useFollow()
   const { likedPromptIds, savedPromptIds, toggleLike, toggleSave } = usePromptInteractions(user?.id)
   const { badges, loading: badgesLoading, earnedCount, totalCount } = useBadges({
@@ -37,9 +37,14 @@ export default function UserProfilePage() {
   
   const [showFollowersDialog, setShowFollowersDialog] = useState(false)
   const [showFollowingDialog, setShowFollowingDialog] = useState(false)
-  const [followers, setFollowers] = useState<UserProfile[]>([])
-  const [following, setFollowing] = useState<UserProfile[]>([])
-  const [loadingFollowers, setLoadingFollowers] = useState(false)
+
+  // Use hooks for followers/following logic
+  const { data: followersData, isLoading: followersLoading } = useFollowers(userId, showFollowersDialog)
+  const { data: followingData, isLoading: followingLoading } = useFollowing(userId, showFollowingDialog)
+
+  const followers = followersData?.users || []
+  const following = followingData?.users || []
+  const loadingFollowers = followersLoading || followingLoading
 
   const isOwnProfile = user?.id === userId
 
@@ -50,52 +55,11 @@ export default function UserProfilePage() {
     
     if (success && profile) {
       // Update the profile state immediately
-      setProfile({
-        ...profile,
+      updateProfile({
         isFollowing: !wasFollowing,
         followers: (profile.followers || 0) + (wasFollowing ? -1 : 1)
       })
     }
-  }
-
-  const fetchFollowers = async () => {
-    setLoadingFollowers(true)
-    try {
-      const response = await fetch(`/api/user/${userId}/followers`)
-      if (response.ok) {
-        const data = await response.json()
-        setFollowers(data.users)
-      }
-    } catch (error) {
-      console.error('Failed to fetch followers:', error)
-    } finally {
-      setLoadingFollowers(false)
-    }
-  }
-
-  const fetchFollowing = async () => {
-    setLoadingFollowers(true)
-    try {
-      const response = await fetch(`/api/user/${userId}/following`)
-      if (response.ok) {
-        const data = await response.json()
-        setFollowing(data.users)
-      }
-    } catch (error) {
-      console.error('Failed to fetch following:', error)
-    } finally {
-      setLoadingFollowers(false)
-    }
-  }
-
-  const handleShowFollowers = () => {
-    setShowFollowersDialog(true)
-    fetchFollowers()
-  }
-
-  const handleShowFollowing = () => {
-    setShowFollowingDialog(true)
-    fetchFollowing()
   }
 
   const handleViewDetails = (promptId: string) => {
@@ -204,7 +168,7 @@ export default function UserProfilePage() {
                     <span>Prompts</span>
                   </div>
                   <button
-                    onClick={handleShowFollowers}
+                    onClick={() => setShowFollowersDialog(true)}
                     className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
                   >
                     <Users className="h-4 w-4" />
@@ -214,7 +178,7 @@ export default function UserProfilePage() {
                     <span>Followers</span>
                   </button>
                   <button
-                    onClick={handleShowFollowing}
+                    onClick={() => setShowFollowingDialog(true)}
                     className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
                   >
                     <Users className="h-4 w-4" />
@@ -335,7 +299,7 @@ export default function UserProfilePage() {
                 <p className="text-gray-500">No followers yet</p>
               </div>
             ) : (
-              followers.map((follower) => (
+              followers.map((follower: UserProfile) => (
                 <Link
                   key={follower.id}
                   href={`/user/${follower.id}`}
@@ -375,7 +339,7 @@ export default function UserProfilePage() {
                 <p className="text-gray-500">Not following anyone yet</p>
               </div>
             ) : (
-              following.map((user) => (
+              following.map((user: UserProfile) => (
                 <Link
                   key={user.id}
                   href={`/user/${user.id}`}

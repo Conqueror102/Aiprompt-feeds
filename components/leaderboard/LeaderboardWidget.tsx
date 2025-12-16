@@ -6,7 +6,6 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { LeaderboardEntry } from '@/types/leaderboard'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -16,37 +15,10 @@ import { Button } from '@/components/ui/button'
 import { Trophy, ArrowRight, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+import { useLeaderboard } from '@/hooks/use-leaderboard'
+
 export function LeaderboardWidget() {
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const fetchTopUsers = async () => {
-      try {
-        const response = await fetch('/api/badges/leaderboard?type=overall&period=all_time&limit=5')
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch leaderboard')
-        }
-
-        const result = await response.json()
-
-        if (result.success) {
-          setLeaderboard(result.data.leaderboard)
-        } else {
-          throw new Error(result.error || 'Failed to load leaderboard')
-        }
-      } catch (err) {
-        console.error('Error fetching leaderboard:', err)
-        setError('Failed to load leaderboard')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchTopUsers()
-  }, [])
+  const { leaderboard, loading, error } = useLeaderboard({ limit: 5 })
 
   const getRankStyle = (rank: number) => {
     if (rank === 1) return 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white'

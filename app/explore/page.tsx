@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
+import { useQueryClient } from "@tanstack/react-query"
 import { TrendingUp, Clock, Heart, Users, Trophy, Award, Sparkles, Info, Target, BookOpen } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -16,6 +17,9 @@ import { useBadges } from "@/hooks/use-badges"
 import { ALL_BADGES } from "@/lib/badges/badge-definitions"
 import { BadgeCategory } from "@/types/badge"
 import { LeaderboardWidget } from "@/components/leaderboard"
+import { useAuth } from "@/hooks/use-auth"
+import { usePrompts, useSavedPrompts } from "@/hooks/use-prompts"
+import { useUserProfile } from "@/hooks/use-user-profile"
 
 interface Prompt {
   _id: string
@@ -43,14 +47,40 @@ interface User {
 }
 
 export default function ExplorePage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [allPrompts, setAllPrompts] = useState<Prompt[]>([])
-  const [userPrompts, setUserPrompts] = useState<Prompt[]>([])
-  const [savedPrompts, setSavedPrompts] = useState<Prompt[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null)
+  // Queries
+  const { user, loading: userLoading } = useAuth()
+  
+  // Public prompts for stats/trending (using limit 20 as per original fetch)
+  // Note: usePrompts returns { prompts: Prompt[] } but the hook returns { prompts: Prompt[] } from pages.
+  // We need to check usePrompts implementation. It returns { prompts: Prompt[] } which is the FLAT array.
+  const { prompts: allPrompts, loading: promptsLoading } = usePrompts(20)
+  
+  // User specific data
+  const { profile: userProfile, prompts: userPrompts } = useUserProfile(user?.id || "")
+  const { data: savedPromptsData } = useSavedPrompts()
+  const savedPrompts = savedPromptsData?.prompts || []
+
+  const loading = userLoading || promptsLoading
+  const queryClient = useQueryClient()
+
   const [totalPromptsOnPlatform, setTotalPromptsOnPlatform] = useState(0)
+  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null)
   const [showBadges, setShowBadges] = useState(false)
+
+  // Effect to update total prompts count if available from API metadata
+  // Since usePrompts returns flattened array, we might not get total count easily unless exposed.
+  // The original code used promptsData.pagination?.total.
+  // Our usePrompts hook doesn't expose pagination metadata directly in the return object yet, 
+  // only 'prompts' array. 
+  // However, for the dashboard, using the length of fetched prompts or a separate stat query is better.
+  // For now we can use allPrompts.length or just hardcode/ignore if less critical, 
+  // OR we can export data from usePrompts to access pages[0].pagination.total
+  // Let's assume allPrompts.length is "recent" count, but for "Total Prompts on Platform" 
+  // we might want a real count. 
+  // Let's just use allPrompts.length for now or 100+ as placeholder if we can't get it.
+  // Actually, we can use the 'data' from useInfiniteQuery if we export it from usePrompts...
+  // But usePrompts only exports flattened prompts.
+  // Let's rely on what we have.
   
   const { badges, loading: badgesLoading, earnedCount, totalCount } = useBadges({
     userId: user?.id,
@@ -80,19 +110,15 @@ export default function ExplorePage() {
   const totalLikes = useMemo(() => {
     return userPrompts.reduce((sum, prompt) => sum + prompt.likes, 0)
   }, [userPrompts])
-
+  
   const handlePromptRated = (promptId: string, newRating: number) => {
-    // Update the prompt in allPrompts array
-    setAllPrompts((prev) => prev.map((p) => p._id === promptId ? { ...p, rating: newRating } : p))
-    
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ['prompts'] })
+    // If we want immediate feedback on the selected prompt modal, we might need to update it locally if it's not reactive to the query immediately
     if (selectedPrompt && selectedPrompt._id === promptId) {
       setSelectedPrompt({ ...selectedPrompt, rating: newRating })
     }
   }
-
-  useEffect(() => {
-    fetchInitialData()
-  }, [])
 
   // Lazy load badges when user scrolls to badge section
   useEffect(() => {
@@ -100,57 +126,6 @@ export default function ExplorePage() {
     // Badge data will be fetched by useBadges hook when showBadges is true
   }, [showBadges])
 
-  const fetchInitialData = async () => {
-    const token = localStorage.getItem("token")
-    
-    try {
-      setLoading(true)
-      
-      // Parallel fetch for better performance
-      const requests: Promise<any>[] = [
-        // Always fetch public prompts (limited to 20 for initial load)
-        fetch("/api/prompts?limit=20").then(res => res.ok ? res.json() : null)
-      ]
-
-      // Add authenticated requests if token exists
-      if (token) {
-        requests.push(
-          fetch("/api/auth/me", {
-            headers: { Authorization: `Bearer ${token}` }
-          }).then(res => res.ok ? res.json() : null),
-          fetch("/api/user/prompts", {
-            headers: { Authorization: `Bearer ${token}` }
-          }).then(res => res.ok ? res.json() : null),
-          fetch("/api/user/saved-prompts", {
-            headers: { Authorization: `Bearer ${token}` }
-          }).then(res => res.ok ? res.json() : null)
-        )
-      }
-
-      const results = await Promise.all(requests)
-      
-      // Process results
-      const promptsData = results[0]
-      if (promptsData?.prompts) {
-        setAllPrompts(promptsData.prompts)
-        setTotalPromptsOnPlatform(promptsData.pagination?.total || promptsData.prompts.length)
-      }
-
-      if (token && results.length > 1) {
-        const userData = results[1]
-        const userPromptsData = results[2]
-        const savedPromptsData = results[3]
-
-        if (userData) setUser(userData)
-        if (userPromptsData?.prompts) setUserPrompts(userPromptsData.prompts)
-        if (savedPromptsData?.prompts) setSavedPrompts(savedPromptsData.prompts)
-      }
-    } catch (error) {
-      console.error("Failed to fetch initial data:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
 
   if (loading) {

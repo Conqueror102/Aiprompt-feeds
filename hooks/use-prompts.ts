@@ -1,82 +1,207 @@
-// Custom hook for managing prompts state and operations
-import { useState, useEffect } from 'react'
-import { Prompt } from '@/types'
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { PromptsResponse, Prompt } from '@/types'
 import { promptService } from '@/services/prompt-service'
-import { cacheService } from '@/services/cache-service'
 
-export function usePrompts() {
-  const [prompts, setPrompts] = useState<Prompt[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
-  const [isFetchingMore, setIsFetchingMore] = useState(false)
+interface UsePromptsOptions {
+  limit?: number
+  category?: string
+  agent?: string
+}
 
-  const fetchPrompts = async (pageNum = 1, isLoadMore = false) => {
-    if (isLoadMore) {
-      setIsFetchingMore(true)
-    } else {
-      setLoading(true)
-    }
-    setError(null)
+export function usePrompts(options: UsePromptsOptions | number = 12) {
+  const limit = typeof options === 'number' ? options : (options.limit || 12)
+  const category = typeof options === 'object' ? options.category : undefined
+  const agent = typeof options === 'object' ? options.agent : undefined
+  
+  const queryClient = useQueryClient()
 
-    try {
-      
-      const limit = 12
-      const data = await promptService.getAll(pageNum, limit)
-      
-      if (data.length < limit) {
-        setHasMore(false)
-      } else {
-        setHasMore(true)
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    refetch
+  } = useInfiniteQuery({
+    queryKey: ['prompts', limit, category, agent],
+    queryFn: ({ pageParam = 1 }) => promptService.getAll(pageParam, limit, category, agent),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: PromptsResponse) => {
+      if (lastPage.pagination.page < lastPage.pagination.pages) {
+        return lastPage.pagination.page + 1
       }
+      return undefined
+    },
+  })
 
-      if (isLoadMore) {
-        setPrompts(prev => {
-          // Deduplicate prompts just in case
-          const newPrompts = data.filter(p => !prev.some(existing => existing._id === p._id))
-          return [...prev, ...newPrompts]
-        })
-      } else {
-        setPrompts(data)
-      }
+  // Flatten the pages into a single array of prompts
+  const prompts = data?.pages.flatMap((page: PromptsResponse) => page.prompts) || []
+
+  // Robust optimistic update helper
+  // This updates the prompt across all active query variations (filtered, sorted, etc.)
+  const updatePrompt = (promptId: string, updates: Partial<Prompt>) => {
+    // 1. Snapshot the previous data (not strictly needed for basic optimistic updates but good practice)
+    
+    // 2. Optimistically update all queries that contain this prompt
+    // We use setQueriesData to target all 'prompts' queries regardless of their specific filters
+    queryClient.setQueriesData<any>({ queryKey: ['prompts'] }, (oldData: any) => {
+      if (!oldData || !oldData.pages) return oldData
       
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch prompts')
-      console.error('Failed to fetch prompts:', err)
-    } finally {
-      setLoading(false)
-      setIsFetchingMore(false)
-    }
-  }
+      return {
+        ...oldData,
+        pages: oldData.pages.map((page: PromptsResponse) => ({
+          ...page,
+          prompts: page.prompts.map((p) => 
+            p._id === promptId ? { ...p, ...updates } : p
+          )
+        }))
+      }
+    })
 
-  const loadMore = () => {
-    if (!isFetchingMore && hasMore) {
-      const nextPage = page + 1
-      setPage(nextPage)
-      fetchPrompts(nextPage, true)
-    }
+    // 3. Also update the individual prompt query if it exists
+    queryClient.setQueryData(['prompt', promptId], (oldData: Prompt | undefined) => {
+        if (!oldData) return undefined
+        return { ...oldData, ...updates }
+    })
   }
-
-  const refreshPrompts = () => {
-    setPage(1)
-    setHasMore(true)
-    cacheService.clearPrompts()
-    fetchPrompts(1, false)
-  }
-
-  useEffect(() => {
-    fetchPrompts(1, false)
-  }, [])
 
   return {
     prompts,
-    loading,
-    error,
-    refreshPrompts,
-    setPrompts,
-    loadMore,
-    hasMore,
-    isFetchingMore
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+    refreshPrompts: refetch,
+    updatePrompt,
+    loadMore: fetchNextPage,
+    hasMore: hasNextPage,
+    isFetchingMore: isFetchingNextPage,
   }
 }
+
+/**
+ * Hook for fetching a single prompt
+ */
+export function usePrompt(id: string) {
+  return useQuery({
+    queryKey: ['prompt', id],
+    queryFn: async () => {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/prompts/${id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
+      })
+      if (!response.ok) throw new Error('Failed to fetch prompt')
+      return response.json()
+    },
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+/**
+ * Hook for updating a prompt
+ */
+export function useUpdatePrompt() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Prompt> }) => {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/prompts/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      })
+      if (!response.ok) throw new Error('Failed to update prompt')
+      return response.json()
+    },
+    onSuccess: (updatedPrompt, variables) => {
+      // 1. Update individual prompt cache
+      queryClient.setQueryData(['prompt', variables.id], updatedPrompt)
+      
+      // 2. Efficiently update all prompt lists (feeds, search results, etc.)
+      // Instead of invalidating (refetching) all lists, we manually update the item in the cache.
+      queryClient.setQueriesData<any>({ queryKey: ['prompts'] }, (oldData: any) => {
+        if (!oldData || !oldData.pages) return oldData
+        
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: PromptsResponse) => ({
+            ...page,
+            prompts: page.prompts.map((p) => 
+              p._id === variables.id ? updatedPrompt : p
+            )
+          }))
+        }
+      })
+      
+      // 3. Also update user profile prompts if they exist in cache
+      // The key for user prompts is typically ['user-prompts', userId]
+      // Since we don't know the userId easily here without context, we can try to find it 
+      // or just invalidate user-prompts to be safe, OR use setQueriesData with a fuzzy key.
+      queryClient.setQueriesData<Prompt[]>({ queryKey: ['user-prompts'] }, (oldData: Prompt[] | undefined) => {
+        if (!oldData) return oldData
+        return oldData.map(p => p._id === variables.id ? updatedPrompt : p)
+      })
+
+      // Note: We still invalidate 'user-profile' generally if needed, but for simple edits
+      // ensuring the prompt list is updated is usually sufficient.
+    }
+  })
+}
+
+/**
+ * Hook for fetching user's saved prompts
+ */
+export function useSavedPrompts() {
+  return useQuery({
+    queryKey: ['saved-prompts'],
+    queryFn: async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+      if (!token) return { prompts: [] }
+      
+      const response = await fetch('/api/user/saved-prompts', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!response.ok) throw new Error('Failed to fetch saved prompts')
+      return response.json()
+    },
+    enabled: typeof window !== 'undefined' && !!localStorage.getItem('token'),
+  })
+}
+
+/**
+ * Hook for creating a prompt
+ */
+export function useCreatePrompt() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (newPrompt: any) => {
+      const token = localStorage.getItem('token')
+      const response = await fetch('/api/prompts/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newPrompt),
+      })
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to create prompt')
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['prompts'] })
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] })
+      // We might want to clear specific cache keys if we had them manually managed before
+      localStorage.removeItem('cachedPrompts')
+      localStorage.removeItem('cachedPromptsTime')
+    }
+  })
+}
+

@@ -59,4 +59,10 @@ export interface AuthResponse {
 
 export interface PromptsResponse {
   prompts: Prompt[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    pages: number
+  }
 }

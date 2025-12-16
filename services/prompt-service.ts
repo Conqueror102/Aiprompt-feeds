@@ -3,9 +3,16 @@ import { apiClient } from './api-client'
 import { Prompt, PromptsResponse } from '@/types'
 
 export const promptService = {
-  async getAll(page = 1, limit = 12): Promise<Prompt[]> {
-    const response = await apiClient.get<PromptsResponse>(`/prompts?page=${page}&limit=${limit}`)
-    return response.prompts
+  async getAll(page = 1, limit = 12, category?: string, agent?: string): Promise<PromptsResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    })
+    
+    if (category && category !== 'all') params.append('category', category)
+    if (agent && agent !== 'all') params.append('agent', agent)
+    
+    return apiClient.get<PromptsResponse>(`/prompts?${params.toString()}`)
   },
 
   async getById(id: string): Promise<Prompt> {
@@ -30,6 +37,14 @@ export const promptService = {
 
   async save(promptId: string): Promise<void> {
     return apiClient.post('/user/save-prompt', { promptId })
+  },
+
+  async rate(promptId: string, value: number): Promise<{ average: number, count: number }> {
+    return apiClient.post<{ average: number, count: number }>(`/prompts/${promptId}/rate`, { value })
+  },
+
+  async getUserRating(promptId: string): Promise<{ value: number | null }> {
+    return apiClient.get<{ value: number | null }>(`/prompts/${promptId}/rate`)
   },
 
   async getLikedPrompts(): Promise<Prompt[]> {

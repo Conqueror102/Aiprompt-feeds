@@ -32,12 +32,17 @@ const TECHNOLOGIES = [
   "TensorFlow", "PyTorch", "Machine Learning"
 ];
 
+import { useAuth } from "@/hooks/use-auth"
+import { useCreatePrompt } from "@/hooks/use-prompts"
+
+// ... imports ...
+
 export default function AddPromptPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { checkAndCelebrate } = useBadgeCelebration()
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(false)
+  const { user, loading: userLoading } = useAuth()
+  const createMutation = useCreatePrompt()
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -50,35 +55,12 @@ export default function AddPromptPage() {
   const [toolsInput, setToolsInput] = useState("")
   const [isPrivate, setIsPrivate] = useState(false)
 
+  // Redirect if not authenticated (handled by useAuth usually, but specific redirect here)
   useEffect(() => {
-    fetchUser()
-  }, [])
-
-  const fetchUser = async () => {
-    const token = localStorage.getItem("token")
-    if (!token) {
-      router.push("/login")
-      return
+    if (!userLoading && !user) {
+      router.push("/login") 
     }
-
-    try {
-      const response = await fetch("/api/auth/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        const userData = await response.json()
-        setUser(userData)
-      } else {
-        router.push("/login")
-      }
-    } catch (error) {
-      console.error("Failed to fetch user:", error)
-      router.push("/login")
-    }
-  }
+  }, [user, userLoading, router])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -130,65 +112,41 @@ export default function AddPromptPage() {
       return
     }
 
-    setLoading(true)
-
     try {
-      const response = await fetch("/api/prompts/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ ...formData, private: isPrivate }),
+      const newPrompt = await createMutation.mutateAsync({ ...formData, private: isPrivate })
+      
+      toast({
+        title: "Success!",
+        description: "Your prompt has been created",
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        
-        // Clear cache when new prompt is created
-        localStorage.removeItem('cachedPrompts')
-        localStorage.removeItem('cachedPromptsTime')
-        
-        toast({
-          title: "Success!",
-          description: "Your prompt has been created",
-        })
-
-        // Check for badge celebrations
-        checkAndCelebrate(data)
-        
-        // Navigate after a short delay to allow celebration to show
-        setTimeout(() => {
-          router.push("/")
-        }, 500)
-      } else {
-        const error = await response.json()
-        toast({
-          title: "Error",
-          description: error.message || "Failed to create prompt",
-          variant: "destructive",
-        })
-      }
+      // Check for badge celebrations (using response data)
+      checkAndCelebrate(newPrompt.data || newPrompt) // depend on API response structure
+      
+      // Navigate after a short delay to allow celebration to show
+      setTimeout(() => {
+        router.push("/")
+      }, 500)
     } catch (error) {
+      // Error handled by mutation or here
       toast({
         title: "Error",
-        description: "Failed to create prompt",
+        description: error instanceof Error ? error.message : "Failed to create prompt",
         variant: "destructive",
       })
-    } finally {
-      setLoading(false)
     }
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <Navbar user={user} />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
-        </div>
-      </div>
-    )
+  if (userLoading || !user) {
+     // Show loading or nothing while redirecting
+     return (
+       <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+         <Navbar user={null} />
+         <div className="flex items-center justify-center h-96">
+           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
+         </div>
+       </div>
+     )
   }
 
   return (
@@ -349,7 +307,7 @@ export default function AddPromptPage() {
               </div>
 
               <div className="flex gap-4 pt-6">
-                <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
+                <Button type="button" variant="outline" onClick={() => router.back()} disabled={createMutation.isPending}>
                   Cancel
                 </Button>
                 <div className="flex items-center gap-4">
@@ -362,8 +320,8 @@ export default function AddPromptPage() {
                     />
                     <span className="text-sm">Make this prompt private</span>
                   </label>
-                  <Button type="submit" disabled={loading} className="bg-green-600 hover:bg-green-700 text-white">
-                    {loading ? "Creating..." : "Create Prompt"}
+                  <Button type="submit" disabled={createMutation.isPending} className="bg-green-600 hover:bg-green-700 text-white">
+                    {createMutation.isPending ? "Creating..." : "Create Prompt"}
                   </Button>
                 </div>
               </div>

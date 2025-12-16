@@ -339,16 +339,40 @@ export class CommentService {
    * Format comment object for API response
    */
   private static formatComment(comment: any): CommentType {
-    return {
-      _id: comment._id.toString(),
-      content: comment.content,
-      promptId: comment.promptId.toString(),
-      authorId: comment.authorId._id?.toString() || comment.authorId.toString(),
-      author: {
-        _id: comment.authorId._id?.toString() || comment.authorId.toString(),
+    // Handle both populated authorId and aggregation result (where author is a separate field)
+    let authorData = {
+      _id: 'unknown',
+      name: 'Unknown User',
+      avatar: undefined
+    }
+
+    // Case 1: Aggregation result (author field exists)
+    if (comment.author && typeof comment.author === 'object') {
+      authorData = {
+        _id: comment.author._id?.toString() || comment.authorId?.toString(),
+        name: comment.author.name || 'Unknown User',
+        avatar: comment.author.avatar
+      }
+    } 
+    // Case 2: Populated authorId (Active Record)
+    else if (comment.authorId && typeof comment.authorId === 'object' && comment.authorId._id) {
+       authorData = {
+        _id: comment.authorId._id?.toString(),
         name: comment.authorId.name || 'Unknown User',
         avatar: comment.authorId.avatar
-      },
+      }
+    }
+    // Case 3: Just IDs available (fallback)
+    else if (comment.authorId) {
+       authorData._id = comment.authorId.toString()
+    }
+
+    return {
+      _id: comment._id?.toString(),
+      content: comment.content || '',
+      promptId: comment.promptId?.toString() || '',
+      authorId: authorData._id,
+      author: authorData,
       parentId: comment.parentId?.toString(),
       depth: comment.depth || 0,
       likes: comment.likes || 0,
@@ -357,7 +381,7 @@ export class CommentService {
       editedAt: comment.editedAt,
       isDeleted: comment.isDeleted || false,
       deletedAt: comment.deletedAt,
-      createdAt: comment.createdAt,
+      createdAt: comment.createdAt || new Date().toISOString(),
       updatedAt: comment.updatedAt
     }
   }
