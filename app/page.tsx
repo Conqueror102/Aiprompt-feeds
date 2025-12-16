@@ -21,7 +21,7 @@ import CommentModal from "@/components/comments/CommentModal"
 
 export default function HomePage() {
   const { user } = useAuth()
-  const { prompts, loading, setPrompts } = usePrompts()
+  const { prompts, loading, setPrompts, loadMore, hasMore, isFetchingMore } = usePrompts()
   const { likedPromptIds, savedPromptIds, toggleLike, toggleSave } = usePromptInteractions(user?.id)
   const { isOpen: isCommentModalOpen, selectedPrompt: commentPrompt, openCommentModal, closeCommentModal } = useCommentModal()
   
@@ -271,6 +271,9 @@ export default function HomePage() {
               onSave={toggleSave}
               onViewDetails={handleViewDetails}
               onComment={handleOpenComments}
+              onLoadMore={loadMore}
+              hasMore={hasMore}
+              isFetchingMore={isFetchingMore}
             />
           </div>
         </main>

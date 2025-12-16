@@ -3,8 +3,8 @@ import { apiClient } from './api-client'
 import { Prompt, PromptsResponse } from '@/types'
 
 export const promptService = {
-  async getAll(): Promise<Prompt[]> {
-    const response = await apiClient.get<PromptsResponse>('/prompts')
+  async getAll(page = 1, limit = 12): Promise<Prompt[]> {
+    const response = await apiClient.get<PromptsResponse>(`/prompts?page=${page}&limit=${limit}`)
     return response.prompts
   },
 
