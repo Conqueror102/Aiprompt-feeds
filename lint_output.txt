@@ -1,0 +1,6 @@
+
+> my-v0-project@0.1.0 lint C:\Users\Victo\Desktop\AI-prompt
+> next lint
+
+Invalid project directory provided, no such directory: C:\Users\Victo\Desktop\AI-prompt\lint
+ ELIFECYCLE  Command failed with exit code 1.
